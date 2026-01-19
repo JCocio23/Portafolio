@@ -1,0 +1,332 @@
+\documentclass[../portafolio.tex]{subfiles}
+\begin{document}
+
+\chapter{Método de la Secante para encontrar ceros de una función}
+\label{cap:metodo_secante}
+
+\chapterauthor{Ignacio Falcón, Joaquín Parra, Alvaro Osses}
+
+\hfill \textbf{Fecha de la actividad:} 26 de Noviembre del 2025
+
+\hfill
+
+Para el presente capítulo, se analizarán uno de muchos métodos numéricos para calcular los ceros (valores $x = c$, tal que $f(c) = 0$) de una función $f(x)$, con el nombre de \textbf{Método de la secante}, además, se hará uso de una función polinómica con el objetivo de demostrar su uso. 
+
+Luego de ello, se analizará el error generado por el método anteriormente mencionado, junto a una comparación entre los diferentes métodos conocidos.
+
+\section{Método de la secante}
+
+Para comenzar, se debe tener presente el funcionamiento de este método. Este se basa en estimar los valores "ceros" de una función a partir del punto donde una recta secante (recta que atraviesa dos puntos en de una curva) atraviesa el eje horizontal (Eje X o $y=0$).
+
+Para hacer uso, se deben conocer la función a utilizar ($f(x)$), y dos valores pertenecientes a la variable independiente de la función $x_{n-1}$ y $x_n$ tal que $f(x_{n-1}) \neq 0 \neq f(x_n)$.
+
+A partir de ello, se define el método de la secante como:
+
+\begin{equation} \label{metodo_secante}
+x_{n+1} = x_n - \frac{x_n - x_{n-1}}{f(x_n) - f(x_{n-1})}f(x_n)
+\end{equation}
+
+Es importante notar el hecho de que este método no asegura que el valor cero se encuentre en el intervalo $[x_{n-1}, x_n]$, es por esto que se debe asegurar de alguna forma que este se encuentre dentro del intervalo a trabajar a través de métodos como el del \textit{Teorema de los ceros de Bolzano}.
+
+
+Para realizar su uso, vamos a considerar una función polinómica definida como:
+
+\begin{equation} \label{funcion_x3}
+f(x) = x^3 -5x \quad, \quad -3 \leq x \leq 3 
+\end{equation}
+
+Ahora, para realizar la búsqueda de los ceros de la función a través de métodos numéricos, se procederá a utilizar \lstinline|Python| en \lstinline|Numpy|, a través de los siguientes pasos.
+
+\begin{itemize}
+    \item Se considera en dividir el intervalo de trabajo ($-3 \leq x \leq 3$) en 10 puntos equidistantes, para esto se hace uso de la función \lstinline|numpy.linspace()|.
+    \item A continuación, se hace uso del teorema de valor intermedio, en particular, el teorema de los ceros de Bolzano, el cuál se enuncia como:
+
+    \textit{Para una función continua en un intervalo cerrado $[a,b]$, tal que $f(a) \cdot f(b) < 0$, entonces debe existir $c \in [a,b]$ tal que $f(c) = 0$}
+
+    Esto se hará uso considerando y analizando los límites de cada intervalo antes generado, haciendo uso de un ciclo \lstinline|if| que evalua el valor del producto mencionado por el teorema.
+
+    \item En caso de que se cumpla el teorema, se considerará los valores extremos del intervalo como puntos $x_{n-1}$ y $x_n$ para introducir en el método de la secante (\ref{metodo_secante}) hasta que se haya de cumplir la condición de convergencia de:
+
+    \begin{equation} \label{condicion_convergencia}
+    |x_{n+1} - x_n| < 10^{-5}
+    \end{equation}
+
+\end{itemize}
+Finalmente, para cada raíz se entrega la aproximación numérica y la cantidad de iteraciones que se realizaron hasta superar la tolerancia (\ref{condicion_convergencia}).
+
+A continuación, se muestra el código utilizado, el cuál sigue las instrucciones antes mencionadas junto a la función a trabajar (\ref{funcion_x3}).
+
+\begin{lstlisting}
+tolerancia = 1e-5
+
+f = lambda x: x**3 -5*x # Se define la función a utilizar
+
+    # Se define el método de la secante
+def met_secante(f,a,b,tolerancia):
+    zeros = []
+    int = np.linspace(a,b,10)
+    print(int)
+    for i in range(int.size-1): 
+
+        if f(int[i])*f(int[i+1]) <= 0:
+            a,b = int[i:i+2]
+            fa,fb = f(a), f(b)
+            m = 0
+            while (abs(fb*(b-a)/(fb-fa)) >=tolerancia):
+                bold=b 
+                b = b - fb*(b-a)/(fb-fa) 
+                fa=fb 
+                a=bold
+                fb=f(b) 
+                m +=1
+            print("Existe un cero",b,"con iteraciones de",m,"veces")
+            zeros.append(b)
+    return zeros
+
+met_secante(f,-3,3,tolerancia)
+\end{lstlisting}
+
+
+Ahora, para encontrar los ceros de la función (\ref{funcion_x3}), es necesario enunciar el \textit{Teorema Fundamental del Álgebra}:
+
+\textit{El Teorema Fundamental del Álgebra establece que todo polinomio de grado mayor que cero, tiene al menos una raíz compleja. En concreto, para la extensión del cuerpo de los números complejos, un polinomio de grado N siempre tendrá N raíces o valores tal que este hagan cero al polinomio.}
+
+Por esto, considerando que la función es de grado  tres, se puede afirmar que existen tres soluciones $c$ tal que $f(c) = 0$ o también, que existen tres ceros para la función, ahora, es necesario analizar si estos son de naturaleza real o compleja, puesto que se desea trabajar en el cuerpo de los números reales.
+
+Para esto, usando métodos algebráicos, se pueden obtener estos valores a partir de (\ref{soluciones_polinomio}):
+
+\begin{equation} \label{soluciones_polinomio}
+0 = x(x^2 -5) \Rightarrow x = 0, x = \sqrt{5}, x = - \sqrt{5}
+\end{equation}
+
+Por tanto, se pueden expresar los cálculos realizados \footnote{Para realizar el cálculo de la aproximación a $\sqrt{5}$ se hizo uso de la calculadora científica de Desmos \cite{desmos_calc} } como la tabla de datos donde se puede notar que estos ceros pertenecen al conjunto de los números reales (\ref{fig:tabla_raices}):
+
+\begin{table} 
+    \begin{tabular}{c c c c c}
+        Número del cero & Cero analítico & Cero numérico & N° Iteración & Error Absoluto \\
+    \hline
+
+        1 & -2.236067977 & -2.2360679871216194 &  5 & 0.00000001\\
+        2 & 0 & 0 & 1 & 0 \\
+        3 &  2.236067977 & 2.23606776287524 & 4& 0.00000021 \\
+
+    \end{tabular}
+    \centering
+    \caption{Valores entre los cálculos de ceros de forma analítica y numéricamente, esto, aproximando los valores respectivos de $-\sqrt{5}$ y $ \sqrt{5}$.}
+    \label{fig:tabla_raices}
+\end{table}
+
+En donde se puede observar que los datos poseen un error absoluto de menor orden en comparación a los valores de los ceros. También, es notable la diferencia que existe en el número de iteraciones realizadas para cada valor.
+
+Esto, se debe al hecho de cómo realiza el Método de la Secante el cálculo de los ceros, puesto que en este caso, al separar el intervalo $[-3,3]$ con diez puntos equiespaciados, se puede notar que el primer cero se encuentra más cercano al inicio del segundo intervalo $[-2.3333, -1.666]$, por lo que se requiere de más cantidad de iteraciones del algoritmo para que el valor b se acerce al cero con la suficiente tolerancia. Esto, a diferencia del último cero, el cual se encuentra en el intervalo $[1.666, 2.333]$, donde se puede notar que su cero se encuentra considerablemente más cerca del extremo final del intervalo y, en consecuencia, este requiere de una menor cantidad de iteraciones para que el valor "b" se acerque al cero con la tolerancia requerida.
+
+Finalmente, notar que para el cero en $x=0$, los extremos del intervalo que contienen a este poseen el mismo valor absoluto y en consecuencia, en la primera iteración el método de la secante genera que el valor "b" sea cero y en consecuencia, se alcanza la tolerancia automáticamente.
+
+A su vez, es posible visualizar el gráfico y su relación los ceros de este, los cuales intersectan al eje X ($y = 0$), tal como se puede observar en \ref{fig:ceros_grafico}): 
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\textwidth]{../img/secante/ceros_funcion_x3.png}
+    \caption{Ceros cálculados en la función analítica $f(x)$}
+    \label{fig:ceros_grafico}
+\end{figure}
+
+% -----------------------------------------------------------------
+
+\section{Análisis de error para el método de la secante}
+
+\subsection{Demostración de la proporción del error}
+
+A continuación, se procederá a analizar el error presente en el método de la secante a través de métodos algebráicos en función de sus términos componentes.
+
+Por ello, se procederá a definir el error existente entre el valor $x_n$ y el valor del cero en la función, denotado $x^{\ast}$.
+
+\begin{equation} \label{error_diferencia}
+\varepsilon_n = x_n - x^{\ast}
+\end{equation}
+
+Usando esto, se busca demostrar que:
+
+\begin{equation} \label{error_proporcion}
+\varepsilon_{n+1} \propto \varepsilon_n \varepsilon_{n-1}
+\end{equation}
+
+Para comenzar, usando el la serie de Taylor centrada en el cero ($x^{\ast}$), tenemos que para $f(x_n)$ y $f(x_{n-1})$
+
+\begin{equation} \label{taylor_fn}
+    f(x_n) = f(x^{\ast}) + f'(x^{\ast})\cdot \varepsilon_n + \frac{1}{2}f''(x^{\ast})\varepsilon_n^2 + \frac{1}{3!}f'''(\xi_1)\varepsilon_n^3 
+\end{equation}
+
+\begin{equation}
+    f(x_{n-1}) = f(x^{\ast}) + f'(x^{\ast})\cdot \varepsilon_{n-1} + \frac{1}{2}f''(x^{\ast})\varepsilon_{n-1}^2 + \frac{1}{3!}f'''(\xi_1)\varepsilon_{n-1}^3
+\end{equation}
+
+Donde $\xi_1$ y $\xi_2$ son valores que consideran el residuo de la serie infinita de Taylor.
+
+A partir de esto, se puede expresar del método de la secante (\ref{metodo_secante}), la expresión con los términos $x_n$ y $x_{n-1}$ de la siguiente forma:
+
+\begin{equation}
+    x^{\ast} + \varepsilon_{n+1} = x^{\ast} + \varepsilon_n - \frac{(x^{\ast} + \varepsilon_n)- (x^{\ast} + \varepsilon_{n-1})}{f(x_n)- f(x_{n-1})}f(x_n)
+\end{equation}
+
+Ahora, restando a cada lado de la igualdad el término $x^{\ast}$ y a vez, distribuyendo términos dentro de la fracción, se tiene que:
+
+\begin{equation} \label{varepsilon_formula}
+    \varepsilon_{n+1} = \varepsilon_n - \frac{\varepsilon_n - \varepsilon_{n-1}}{f(x_n) - f(x_{n-1})}f(x_n)
+\end{equation}
+
+Ahora, distribuyendo términos para el segundo lado de la ecuación, se tiene que:
+
+\begin{equation} \label{varepsilon_desordenado}
+    \varepsilon_{n+1} = \frac{\varepsilon_{n-1}f(x_n) - \varepsilon_n f(x_{n-1})}{f(x_n) - f(x_{n-1})}
+\end{equation}
+
+Ahora, notar que la expresión del numerador y el denominador poseen los términos $f(x_n)$ y $f(x_{n-1})$, al reemplazar estos por su serie de Taylor, se tiene que:
+
+\begin{equation}
+    \varepsilon_{n+1} = \frac{\varepsilon_{n-1}(\varepsilon_n f'(x^{\ast})+\frac{\varepsilon_n^2}{2}f''(x^{\ast})+\frac{\varepsilon_n^3}{6}f'''(\xi_1)) - \varepsilon_n(f'(x^{\ast})\varepsilon_{n-1} + \frac{\varepsilon_{n-1}^2}{2}f(x^{\ast}) + \frac{\varepsilon_{n-1}^3}{3!}f'''(\xi_2))}{\left[\varepsilon_n f'(x^{\ast})+ \frac{\varepsilon_n^2}{2}f''(x^{\ast}) + \frac{\varepsilon_n^3}{6}f'''(\xi_1) \right] - \left[\varepsilon_{n-1} f'(x^{\ast}) + \frac{\varepsilon_{n-1}^2}{2}f''(x^{\ast})+\frac{\varepsilon_{n-1}^3}{6}f'''(\xi_2))\right]}
+\end{equation}
+
+\begin{equation}
+    \varepsilon_{n+1} = \frac{ \frac{f''(x^{\ast})}{2} (\varepsilon_{n-1} \varepsilon_n^2 - \varepsilon_n \varepsilon_{n-1}^2) + \frac{\varepsilon_{n-1}\varepsilon_n}{6} (\varepsilon_n^2 f'''(\xi_1) - \varepsilon_{n-1}^2 f'''(\xi_2))}{(\varepsilon_n - \varepsilon_{n-1}) \left[ f'(x^{\ast}) + \frac{f''(x^{\ast})}{2}(\varepsilon_n + \varepsilon_{n-1}) \right] + \frac{\varepsilon_n^3}{6} f'''(\xi_1) - \frac{\varepsilon_{n-1}^3}{6}f'''(\xi_2))}
+\end{equation}
+
+Ahora bien, considerando un $\varepsilon_n$ y $\varepsilon_{n-1}$ lo suficientemente pequeños en caso de que este se encuentre convergiendo (ya que estos corresponden a la distancia entre puntos $x_n$ y $x_{n-1}$), se puede notar que es posible truncar los términos del error $f'''(\xi_1)$ y $f'''(\xi_2)$, quedando entonces:
+
+
+\begin{equation}
+    \varepsilon_{n+1} = \frac{ \frac{f''(x^{\ast})}{2}\varepsilon_{n-1}\varepsilon_n (\varepsilon_n - \varepsilon_{n-1})}{(\varepsilon_n - \varepsilon_{n-1}) \left[ f'(x^{\ast}) + \frac{f''(x^{\ast})}{2}(\varepsilon_n + \varepsilon_{n-1}) \right]}
+\end{equation}
+
+Finalmente, se puede notar que el término $(\varepsilon_n + \varepsilon_{n-1})\frac{f'''(x^{\ast}))}{2}$ es, en comparación a $f'(x^{\ast})$, suficientemente pequeño como para poder ser truncado. Esto debido al hecho que como se encuentra el algoritmo convergiendo, se tiene entonces que los términos $\varepsilon_{n+1}$ y $\varepsilon_n$ tienden a un valor cercano a cero, y por tanto, como $f'(x^{\ast})$ es una constante, el término del denominador acaba siendo solo considerable para $f'(x^{\ast})$, esto en consecuencia, y cancelando factores semejantes, se tiene que:
+
+\begin{equation} \label{prop_demostrada}
+    \varepsilon_{n+1} = \frac{f''(x^{\ast})}{2f'(x^{\ast})} \varepsilon_{n-1}\varepsilon_n
+\end{equation}
+
+Ahora, se puede notar que, debido a que $x^{\ast}$ es un valor fijo (puesto que corresponde al valor del cero de la función), esto implica que sus derivadas son constantes y, en consecuencia, el factor $\frac{f''(x^{\ast})}{2f'(x^{\ast})}$ también es constante, por tanto, queda demostrada la afirmación inicial (\ref{error_proporcion}).
+
+\subsection{Factor de proporcionalidad y comparación con otros métodos}
+
+A continuación, usando como suposición que para cierto $n > N$, se cumple la hipótesis de $\varepsilon_{n+1} = K \varepsilon_n^p$, con $K$ una constante, entonces se debe demostrar que se cumple también $p = (1 + \sqrt{5})/2$.
+
+
+Para iniciar, considerar que debido a que el término de error o diferencia $\varepsilon_n = x^{\ast} - x_n $ proviene del ciclo de iteraciones convergentes y, por criterio de convergencia general, entonces, se debe cumplir la misma afirmación para la iteración anterior a esta, por tanto, se debe cumplir para un término $n = n-1$, y por ello, debe existir:
+
+\begin{equation}
+    \varepsilon_n = K \varepsilon_{n-1}^p
+\end{equation}
+
+Ahora, de esta ecuación se puede obtener una expresión para $\varepsilon_{n-1}$, inyectando esta dentro de (\ref{prop_demostrada}), se tiene que:
+
+\begin{equation}
+    \varepsilon_{n-1} = K^{-1/p}\cdot \varepsilon_n^{1/p} \quad \Rightarrow \quad \varepsilon_{n+1} = \frac{f''(x^{\ast})}{2f'(x^{\ast})} \varepsilon_n \cdot K^{-1/p} \varepsilon_n^{1/p}
+\end{equation}
+
+En consecuencia, por hipótesis, se tiene que:
+\begin{equation}
+    K \varepsilon_n^p =\frac{f''(x^{\ast})}{2f'(x^{\ast})} K^{-1/p} \cdot \varepsilon_n^{1+1/p}
+\end{equation}
+
+Por tanto, como los valores $\varepsilon_n$ deben ser iguales y se tiene que tanto $K$ como $\frac{f''(x^{\ast})}{2f'(x^{\ast})}$ son constantes, entonces los exponentes de los términos $\varepsilon_n$ deben ser equivalentes, por tanto:
+
+\begin{equation}
+    p = 1 +1/p \Rightarrow p = (1 \pm \sqrt{5})/2 
+\end{equation}
+
+
+Finalmente, como se sabe que esta proporción debe ser siempre positiva, puesto que el error $\varepsilon_{n+1}$ debe disminuir en proporción al error $\varepsilon_n$ para que el método funcione y a su vez, no diverja, en consecuencia, $p = (1+\sqrt{5})/2$.
+
+% https://mathforcollege.com/nm/mws/gen/03nle/mws_gen_nle_txt_secant.pdf
+
+Ahora, esto implica que el método de la secante posee una convergencia del tipo \textit{Superlineal}, debido a que su tasa/ratio de convergencia se encuentra entre 1 y 2, en concreto, este siendo el número áureo ($\phi = (1+\sqrt{5})/2)$) (\cite{WikiSecante}).
+
+Comparando este con otros métodos numéricos como el de la bisección o Newton-Raphson, se pueden notar diferencias en funcionalidad y eficiencia (\cite{convergencias_upc}), como se describe en (\ref{fig:tabla_comparacion_metodos}).
+
+\begin{table}
+    \begin{tabular}{l c c c}
+        Método & Convergencia & Ratio de Convergencia & Utilidad \\
+        \hline \hline
+        & & & \\
+        Bisección & Lineal & 1 & \parbox[t]{6cm}{Permite calcular de forma básica, los ceros de una función a través de la división constante del intervalo a analizar} \\
+        & & & \\
+        Secante & Superlineal & $(1 + \sqrt{5})/2$ & \parbox[t]{6cm}{Permite obtener ceros para casos donde la derivada sea difícil o imposible de calcular} \\
+        & & & \\
+        Newton-Raphson & Cuadrática & 2 & \parbox[t]{6cm}{Permite calcular los ceros de una función con menor cántidad de iteraciones haciendo uso del valor de la derivada en el punto}
+\end{tabular}
+    \caption{Comparación entre diferentes métodos para encontrar ceros de forma analítica para una función $f(x)$, esto, junto a el orden de convergencia para cada método (\cite{convergencias_upc})}
+    \label{fig:tabla_comparacion_metodos}
+\end{table}
+
+En base a esto, se puede notar que la tasa de convergencia para el método de Newton-Raphson es mayor a la secante, lo que naturalmente permite una mejor eficiencia a la hora de encontrar ceros de una función, esto, a diferencia del método de la Bisección, el cual necesita de mayor cantidad de iteraciones para realizar la misma tarea (\cite{MetodoSecante}).
+
+Sin embargo, notar que para funciones tales que posean un doble cero, el método de Newton-Raphson posee problemas, puesto que el método podría no converger al hacer uso de su derivada sobre los puntos de interés (\cite{MetodoSecante}), además, al haber un doble cero, el error $\varepsilon_{n+1}$ posee un orden del tipo lineal. 
+
+Para este caso, el método de la secante sufre también de problemas, en concreto, hay que analizar como cambia el error $\varepsilon_n$ frente a esto:
+
+Para ello, se puede obtener el valor del error $\varepsilon_{n+1}$ referenciado en (\ref{varepsilon_formula}), esto a través de la fórmula (\ref{varepsilon_desordenado}).
+
+Al usar la expansión en serie de Taylor con los ceros en la función y primera derivada $f(x^{\ast}) = f'(x^{\ast}) = 0$, se tiene que:
+
+\begin{equation}
+    \varepsilon_{n+1} = \frac{\varepsilon_{n-1} \left[ \frac{1}{2}f''(x^{\ast})\varepsilon_n^2 + \frac{1}{3!} f'''(\xi_1) \varepsilon_n^3  \right] - \varepsilon_n \left[\frac{1}{2}f''(x^{\ast})\varepsilon_{n-1}^2 + \frac{1}{3}f'''(\xi_2)\varepsilon_{n-1}^3 \right]}{ \frac{1}{2}f''(x^{\ast})\varepsilon_n^2 + \frac{1}{3!} f'''(\xi_1) \varepsilon_n^3 - \frac{1}{2}f''(x^{\ast})\varepsilon_{n-1}^2 - \frac{1}{3}f'''(\xi_2)\varepsilon_{n-1}^3 }
+\end{equation}
+
+Reordenando los elementos dentro del numerador y denominador, se tiene que:
+
+\begin{equation}
+    \varepsilon_{n+1} = \frac{\frac{1}{2}f''(x^{\ast})\varepsilon_n\varepsilon_{n-1}(\varepsilon_n-\varepsilon_{n-1}) +\frac{1}{3!} f'''(\xi_1) \varepsilon_n^3 - \frac{1}{3}f'''(\xi_2)\varepsilon_{n-1}^3 }{\frac{1}{2}f''(x^{\ast})(\varepsilon_n+\varepsilon_{n-1})(\varepsilon_n-\varepsilon_{n-1}) }
+\end{equation}
+
+Considerando a los términos $f(\xi_1)$ y $f(\xi_2)$ como términos de mínimo tamaño debido al grado del error $\varepsilon$, se pueden truncar, por lo que reordenando la ecuación quedaría como:
+
+\begin{equation}
+    \varepsilon_{n+1} = \frac{\frac{1}{2} f(x^{\ast}) \varepsilon_{n-1}\varepsilon_n(\varepsilon_n - \varepsilon_{n-1})}{\frac{1}{2}f(x^{\ast})(\varepsilon_n - \varepsilon_{n-1})(\varepsilon_n + \varepsilon_{n-1})}
+\end{equation}
+
+Ahora, factorizando términos semejantes, tenemos que:
+
+\begin{equation}
+    \varepsilon_{n+1} = \frac{\varepsilon_n \varepsilon_{n-1}}{\varepsilon_n + \varepsilon_{n-1}}
+\end{equation}
+
+Ahora, factorizando el término $\varepsilon_{n-1}$, se tiene que:
+\begin{equation}
+    \varepsilon_{n+1} = \frac{\varepsilon_n}{1+\frac{\varepsilon_n}{\varepsilon_{n-1}}}
+\end{equation}
+
+Ahora considerando que el método es convergente, debe entonces ocurrir que $\varepsilon_n < \varepsilon_{n-1}$ (error disminuye conforme se itera el algoritmo) y en consecuencia, $\frac{\varepsilon_n}{\varepsilon_{n-1}} < 1$ (\cite{convergencia_cond}), finalmente, considerar que este término debe ser superior a 0 puesto que de lo contrario, el método no convergería (el error enésimo sería superior al error anterior al enésimo).
+
+Por tanto, se tiene que $0 < \frac{\varepsilon_n}{\varepsilon_{n-1}} < 1$ y por tanto está acotada. Denominandole como K, se tiene entonces que:
+
+
+\begin{equation}
+    \varepsilon_{n+1} = \frac{1}{1 +K} \varepsilon_n
+\end{equation}
+
+Por lo que se puede concluir, que al haber una función de doble cero, o de multiplicidad 2, el método de la secante trabajaría con un orden de convergencia del tipo lineal.
+
+\section*{Conclusiones}
+
+Para finalizar, notar que se hizo un análisis del método numérico de la secante para funciones, en concreto, se hizo de la función $f(x) = x^3 -5x$, esto con el objetivo de obtener sus ceros. Esto se logró de manera efectiva, notando una mínima cantidad de iteraciones para cada punto.
+
+A su vez, este capítulo dió la oportunidad de aprender y entender sobre las diferencias conceptuales y funcionales que existen entre los métodos abordados en este curso, tales como el método de Newton-Raphson o el método de la bisección, a la vez que se pudo comparar entre las utilidades que existen y su relación con la tasa/ratio de convergencia para cada uno ($p$).
+
+\section*{Agradecimientos}
+
+Señalar el agradecimiento al profesor Roberto Navarro por sus comentarios para el código del método de la secante y la ayuda en la capacidad de mejorar este para reducir el número de iteraciones internas.
+
+También, notar la autoría mayoritaria del capítulo por Ignacio Falcón, complementado por Joaquín Parra en correcciones en el código y eficiencia del método y a Álvaro Osses por sus comentarios para redacción y ortografía dentro del contenido de este capítulo, principalmente en la demostración del error $\varepsilon_{n+1}$.
+
+Finalmente, mencionar que para este capítulo, se hizo uso de la inteligencia artificial de Gémini para poder encontrar errores de {\LaTeX} dentro del código de ecuaciones.
+% http://people.whitman.edu/~hundledr/courses/M467F06/ConvAndError.pdf
+
+
+
+% lo que hace referencia al hecho de que este método converge más rápido que un método lineal, tal como lo es el método de la bisección para encontrar ráices, esto sin embargo, no es capaz de superar al método de Newton-Raphson, el cual posee un ratio de convergencia $p=2$
+
+
+
+
+
+\end{document}

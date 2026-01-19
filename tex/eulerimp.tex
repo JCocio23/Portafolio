@@ -1,0 +1,137 @@
+\documentclass[../portafolio.tex]{subfiles}
+
+\begin{document}
+
+\chapter{Método implícito de Euler} \label{ch:euimp}
+
+\chapterauthor{Joaquín Parra, Ignacio Falcón, Alvaro Osses}
+
+\hfill \textbf{Fecha de la actividad:} 26 de Noviembre de 2025
+\vspace{10mm}
+%\addcontentsline{toc}{chapter}{Tarea 1}
+%\markboth{Tarea 1}{Tarea 1}
+
+En el presente capítulo implementaremos el método implícito de Euler para resolver problemas del tipo $dx/dt = f(x)$ de condición incial $x(0) = x_{0}$, utilizando además el método de Newton-Raphson. Posteriormente, aplicaremos esto a la resolución de una ecuación diferencial simple.
+
+\section{Implementación del método}
+
+El método de Euler implícito busca resolver el problema
+\begin{equation}
+  \frac{dx}{dt} = f(x), \quad x(0)=x_{0}
+\end{equation}
+utilizando un esquema adelantado de la forma
+\begin{equation}
+  x_{n+1} = x_{n} + hf(x_{n+1})
+\end{equation}
+De este modo, podemos interpretar el método como una búsqueda de ceros de la función 
+\begin{equation} \label{eq:gx}
+  g(x) = x_{n} + hf(x) - x 
+\end{equation}
+considerando que $g(x_{n+1}) = 0$. 
+\\
+
+Para implementar este esquema, utilizaremos el método de Newton-Raphson para búsqueda de ceros, el cual aproxima la raíz de una función $g(x)$ a través del siguiente esquema:
+\begin{equation}
+  x_{n+1} = x_{n} - \frac{g(x_{n})}{g^{\prime}(x_{n})}
+\end{equation}
+
+Para poder utilizar este método con la función $g(x)$ definida en \eqref{eq:gx}, necesitamos conocer su derivada, para esto, la derivamos analíticamente:
+\begin{equation} \label{eq:dg}
+  \frac{dg}{dx}(x) = h\frac{df}{dx}(x) - 1 
+\end{equation}
+
+Ahora, para implementar este método, se escribió el siguiente código:
+\begin{lstlisting}
+def Newton(f, df, seed, tol = 1e-5, **kwargs):
+    stop = False 
+
+    x = seed
+
+    while not stop:
+        aux = f(x, **kwargs)
+        err = aux/df(x) # Se aplica le esquema de Newton-Raphson
+        x = x - err
+
+        stop = abs(err) < tol and abs(aux) < tol # Se checea si el valor encontrado es 
+                                                 # aceptable, en cuyo caso se detiene el ciclo
+
+    return x
+
+def euler_exp(f, x0, tmax, dt, t0 = 0, **kwargs):
+    x0 = np.asarray(x0) #considera casos en que x0 es un escalar, no un arreglo 
+                        #(convierte escalar a array)
+    t = np.arange(t0, tmax, dt) #arreglo de tiempos
+    x = np.zeros((*t.shape, *x0.shape)) #desempaquetado de iterables
+    x[0] = x0
+
+    for i in range(t.size - 1):
+        x[i+1] = x[i] + dt * f(t[i], x[i], **kwargs)
+    return t, x
+
+def euler_imp(f, df, x0, tmax, dt, t0 = 0, **kwargs):
+    x0 = np.asarray(x0) # Considera casos en que x0 es un escalar, no un arreglo
+    t = np.arange(t0, tmax, dt) # Crea arreglo de tiempos
+    x = np.zeros((*t.shape, *x0.shape)) # Desempaqueta iterables
+    x[0] = x0
+    for i in range(t.size-1):
+        g = lambda y: x[i] + dt*f(t[i], y, **kwargs) - y
+        dg = lambda y: dt*df(t[i], y, **kwargs) - 1
+        x[i+1] = Newton(g, dg, seed = x[i]) # Utiliza Newton-Raphson para encontrar el 
+                                            # siguiente paso
+    return t, x
+\end{lstlisting}
+donde definimos el método de Newton-Raphson, y los métodos de Euler implícito y explícito, tenemos además que \lstinline{f} y \lstinline{df} representan la función $f$ y su derivada, \lstinline{x0} representa la condición incial del problema y \lstinline{seed} representa el valor semilla que necesita el método de Newton-Raphson.
+
+\section{Implementación a un problema real}
+
+Habiendo planteado el método, podemos aplicarlo al problema de decaimiento exponencial
+\begin{equation} \label{eq:edo_euler}
+  x^{\prime}(t) = -5x, \qquad x(0) = 1,
+\end{equation}
+con $0 \leq x \leq 2$ y $h = 0.1$. Para que el problema sea compatible con el método, debemos encontrar la derivada de $x^{\prime}(t)$, para ello derivamos analíticamente la expresión \eqref{eq:edo_euler}. obteniendo la expresión:
+\begin{equation}
+  f^{\prime}(x) = x^{\prime \prime}(t) = -5
+\end{equation}
+
+Así, aplicamos el método a través del siguiente código
+
+%Para ello, tenemos el código:
+
+\begin{lstlisting}
+fun = lambda t, x: -5*x
+dfun = lambda t, x: -5
+
+t, x = euler_imp(fun, dfun, x0 = 1, tmax = 2, dt=0.1)
+teuler, xeuler = euler(fun, x0 = 1, tmax = 2, dt = 0.1)
+\end{lstlisting}
+y generamos el gráfico de la figura \ref{fig:compare} donde comparamos el resultado del método implícito y explícito con la solución exacta. De aquí se puede observar que para valores pequeños, el método implícito se acerca más a la solución exacta que el método explícito.
+
+
+
+\begin{figure}
+  \centering
+  \includegraphics[width = 0.85\textwidth]{euler_imp/compare.pdf}
+  \caption{Comparación de método de Euler implícito y explícito con la solución exacta.}
+  \label{fig:compare}
+\end{figure}
+
+En la figura \ref{fig:error} se aprecia de mejor manera como el método implícito se acerca más a la solución exacta que el explícito para valores de $t<0.5$. Pasado ese punto el error del método implícito es ligeramente mayor al del explícito. Esto úlitmo se debe a que el método implícito de euler es numéricamente más estable que el método explícito para valores de $dt$ más grandes (\cite{impeuler}). Ahora bien, una desventaja del método es que este realizará una busqueda de ceros a cada paso del proceso, lo cual significa un mayor consumo de recursos que el método explícito. Esto puede llegar a causar problemas para funciones donde la busqueda de ceros no converja rápidamente.
+
+
+\begin{figure}
+  \centering
+  \includegraphics[width = 0.85\textwidth]{euler_imp/error.pdf}
+  \caption{Comparación de errores de cada método.}
+  \label{fig:error}
+\end{figure}
+
+\section*{Conclusiones}
+
+Para finalizar, podemos decir que el método implícito de Euler es un esquema de resolución de ecuaciones diferenciales que resulta sumamente útil, pues este reduce una ecuación diferencial a un problema de busqueda de ceros, un problema mucho más simple, y este mostrará resultados numéricamente estables y cercanos a la solución exacta con valores de $dt$ mayores que los requeridos por su contraparte explícita. Ahora bien, es evidente que la principal desventaja de este método, o al menos de la implementación utilizada en este capítulo, es que se debe conocer la derivada de la función asociada al problema. Esto puede resultar trabajoso si se está lidiando con una función muy rebuscada, pero puede solucionarse implementando métodos numéricos para derivar esta función, o bien utilizando otro método de busqueda de ceros que no requiera de la derivada.
+
+\section*{Agradecimientos}
+Este capítulo fue escrito principalmente por Alvaro Osses con contribuciones por Joaquín Parra e Ignacio Falcón. Se extienden agradecimientos al profesor Roberto Navarro por responder dudas respecto al método implementado.
+
+No se utilizaron herramientas de inteligencia artificial para la creación de este capítulo.
+
+\end{document}

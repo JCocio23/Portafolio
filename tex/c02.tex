@@ -1,0 +1,129 @@
+\documentclass[../portafolio.tex]{subfiles}
+
+\begin{document}
+
+ \chapter{Aplicación de ajuste por mínimos cuadrados a la evolución de los niveles de CO$_2$}
+ \label{ch:co2}
+\chapterauthor{Joaquín Parra, Ignacio Falcón, Alvaro Osses}
+
+\hfill \textbf{Fecha de la actividad:} 10 de Diciembre, 2025\\
+ 
+\vspace{10mm}
+
+El dióxido de carbono es una molécula fundamental para la vida, siendo parte esencial de la fotosíntesis que realizan las plantas. Sin embargo, su presencia en la atmósfera es problemática dado que es uno de los tantos gases asociados al efecto invernadero. En este capítulo, nos familiarizaremos con los niveles de dióxido de carbono en la atmósfera observando la curva de Keeling y realizaremos un ajuste por método de mínimos cuadrados con la finalidad de obtener un modelo con el cual extrapolar datos.
+
+\section{Curva de Keeling}
+
+La curva de Keeling es un gráfico que muestra la concentración de dióxido de carbono en la atmósfera desde 1958, medida desde una estación en Mauna Loa, Hawái, manejado por la Oficina Nacional de Administración Oceánica y Atmósferica (NOAA por sus siglas en inglés). En la figura \ref{fig:keeling} se pueden apreciar los datos recolectados desde 1958. Realizaremos un ajuste sobre los últimos 5 años (Noviembre de 2020 a  Noviembre de 2025).
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.5]{co2/keeling.pdf}
+ \caption{Curva de Keeling hecha a partir de los datos del NOAA.}
+  \label{fig:keeling}
+\end{figure}
+
+\section{Ajuste sobre los últimos 5 años}
+Ahora, procederemos a realizar un ajuste por mínimos cuadrados sobre los datos de los últimos años, y testearemos el modelo con los datos de años pasados. El modelo a ajustar es:
+\begin{equation}
+  f(\tau)=  p_0 + \sum _{n=1}^3 \left[ 
+   p_n \tau^n + c_n \cos (2\pi n \tau) + s_n \sin (2\pi n \tau)  \right],
+\end{equation}
+con $\tau = 2 (t - \langle t \rangle) / (t_{max} - t_{min})$, con $t$ siendo un arreglo de \lstinline!numpy! con los datos de los últimos 5 años y $\langle t \rangle = (t_{max} + t_{min})/2$. Se utiliza un tiempo normalizado, pues en las escalas en las que trabaja la curva de Keeling, las potencias de $t$ pueden hacerse muy grandes y podrían traer errores numéricos o de precisión. Notar que con esta normalización $\tau \in [-1,1]$. Si bien el modelo en sí es no lineal pues posee exponentes de $\tau$ distintos de 1, además de la aparición de funciones trigonométricas, el modelo es lineal \textbf{sobre} los parámetros a ajustar $p, c, s$. Con esto en mente, se utilizó el siguiente código para obtener los 10 coeficientes del ajuste:
+
+\begin{lstlisting}
+years, values = np.genfromtxt(
+    "datos.txt",
+    comments="#",
+    usecols=(2, 3),
+    unpack=True
+)
+
+def fil_norm(t, y, t_min, t_max):
+    mask = (t >= t_min) & (t <= t_max)
+    t_sel = t[mask]
+    y_sel = y[mask]
+
+    t_centro = 0.5 * (t_sel.min() + t_sel.max())
+    ancho = t_sel.max() - t_sel.min()
+    tau = 2 * (t_sel - t_centro) / ancho
+
+    return t_sel, y_sel, tau
+
+t_sel, y_sel, tau = fil_norm(years, values, tmin, tmax)
+
+grado = 3
+m = len(tau)
+n = 1 + 3 * grado
+
+B = np.empty((m, n))
+B[:, 0] = 1.0 
+
+for j in range(1, grado + 1):
+    idx = 1 + 3 * (j - 1)
+    B[:, idx]     = tau ** j
+    B[:, idx + 1] = np.cos(2 * np.pi * j * tau)
+    B[:, idx + 2] = np.sin(2 * np.pi * j * tau)
+
+BT = B.transpose()
+coef_fit = np.linalg.inv(BT @ B) @ (BT @ y_sel)
+
+values_fit = B @ coef_fit
+mse_value = np.mean((y_sel - values_fit) ** 2)
+\end{lstlisting}
+
+De aquí, reportamos los valores de los coeficientes obtenidos por el ajuste mediante mínimos cuadrados en el cuadro \ref{tab:param}.
+\begin{table}
+\centering
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Parámetro} & \textbf{Valor} \\
+\hline
+$p_0$ & 4.20975313e+02 \\ \hline
+$p_1$ & 8.39005705e+00 \\ \hline  
+$c_1$ & -2.36688097e-01 \\ \hline  
+$s_1$ & -2.03957847e-01 \\ \hline  
+$p_2$ & 7.81697099e-01 \\ \hline  
+$c_2$ & -8.73250486e-02 \\ \hline  
+$s_2$ & -9.84883860e-02 \\ \hline  
+$p_3$ & -3.01850065e+00 \\ \hline  
+$c_3$ & -8.44165599e-02 \\ \hline  
+$s_3$ & 1.37553593e-02 \\
+\hline
+\end{tabular}
+  \caption{Valores obtenidos por el ajuste.} 
+  \label{tab:param}
+\end{table}
+Con estos parámetros, nuestro ajuste mediante método de mínimos cuadrados sobre el período comprendido por los últimos 5 años se aprecia en la figura \ref{fig:combined} junto a los residuos del modelo, los cuales no parecen seguir un patrón ordenado a primera vista. Además, se reporta un error cuadrático medio MSE $\approx 4.6$, o de forma equivalente, un RMSE $= \sqrt{MSE} \approx 2.1$. Este último parámetro se suele comparar con la desviación estándar de los datos, de la cual se reporta un valor de $\sigma = 3.9$, obteniendo un cociente entre ambas de aproximadamente 0.54. El que el RMSE sea menor a la desviación estándar es un buen indicador que el modelo refleja la naturaleza de los datos. Esto, junto a los residuos, dan cuenta de que el ajuste si bien refleja la tendencia de los datos, tiene ciertos problemas prediciendo los valores.
+
+\begin{figure}
+  \centering
+  \includegraphics[scale=0.45]{co2/ajuste_residuos_5.pdf}
+  \caption{Gráfica del ajuste por método de mínimos cuadrados versus datos, junto a sus residuos.}
+  \label{fig:combined}
+\end{figure}
+
+\section{Extrapolación}
+Finalmente, queda hacer la extrapolación. El modelo pensado para mirar 5 años al pasado se extrapolará a 55 años al pasado, es decir, desde 1970. Existe una sutileza al hacer esto, y es que este nuevo set de años no puede normalizarse de manera idéntica a la forma anterior, pues quedaríamos en el mismo intervalo $[-1,1]$ y el modelo se comportaría exactamente igual, pero los datos serían distintos. Para arreglar esto, realizaremos una normalización coherente con la anterior: $\tau' = 2(t_{new} - \langle t_{old} \rangle) / (t_{old, max} - t_{old,min})$, donde $t_{new}$ es un arreglo con los datos a normalizar (en este caso, hasta 1970) y $t_{old}$ es el arreglo utilizado anteriormente con los datos de los últimos 5 años. Sobre este nuevo set de valores, se aplica el mismo modelo obtenido en el apartado anterior, como se aprecia en la figura \ref{fig:extra}. Se aprecia de inmediato que el ajuste ya no funciona bien fuera del rango de los 5 años (intervalo $[-1,1]$), incluso se puede ver en la figura \ref{fig:zoom} como inmediatamente al salir de este intervalo el ajuste ya no predice la tendencia de los datos. \\
+ El hecho de que el modelo no resista una extrapolación y que no se ajuste adecuadamente a los datos, puede ser atribuido a que el modelo propuesto no refleja la naturaleza del fenómeno descrito. Al no identificar una tendencia en los residuos, es difícil aventurarse a proponer correcciones, por lo que únicamente nos podemos quedar con que el modelo propuesto, si bien refleja hasta cierto punto la tendencia de los datos en el período de los últimos cinco, falla al predecir sus valores (mirar las magnitudes de los residuos) en este intervalo y no refleja la naturaleza de los datos al salir de esta ventana de tiempo.
+
+\begin{figure}
+  \centering
+  \includegraphics[scale=0.6]{co2/extrapolacion.pdf}
+  \caption{Extrapolación del modelo hasta 1970.}
+  \label{fig:extra}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[scale=0.3]{co2/zoom2.png}
+  \caption{Zoom a la figura \ref{fig:extra}. Se aprecia que en entre -1 y 1 se mantiene la forma de la figura \ref{fig:combined}.}
+  \label{fig:zoom}
+\end{figure}
+
+\section*{Conclusiones}
+En este capítulo hicimos uso de un ajuste mediante método de mínimos cuadrados a un modelo propuesto para estudiar un fenómeno contingente como lo son las emisiones de carbono. Este modelo, si bien describe relativamente bien los datos en determinado intervalo de tiempo, en general, no es un buen modelo, pues al salirnos de este intervalo falla rotundamente al predecir la tendencia de las emisiones. Si bien no conocemos las causas de esta discrepancia, aprendimos durante el análisis a realizar ajustes por método de mínimos cuadrados y a comprender la importancia de realizar extrapolaciones/predicciones como forma de testear modelos.
+
+\section*{Agradecimientos}
+Este capítulo fue escrito por Joaquín Parra, con revisiones tanto de código como de contenido de parte de sus compañeros de trabajo Alvaro Osses e Ignacio Falcón, quienes también ayudaron a la hora de hacer los gráficos del capítulo. Se agradece al profesor guía del curso, Dr. Roberto Navarro por presentar los temas en clases y cuyo código sirvió de base para elaborar los nuestros. Se ha utilizado ayuda de Gemini y ChatGPT para realizar algunos gráficos, así como ayuda al momento de refinar código y presentar conceptos relevantes para usar el error cuadrático medio. Finalmente, se agradece al compañero Israel Bravo por entregar guía y comentarios sobre como implementar operaciones matriciales para resolver por método de mínimos cuadrados.
+
+

@@ -1,0 +1,268 @@
+\documentclass[../portafolio.tex]{subfiles}
+
+\begin{document}
+
+\chapter{Método de Shu-Osher aplicado a problema de cinemática} \label{ch:shu}
+
+\chapterauthor{Joaquín Parra, Ignacio Falcón, Alvaro Osses}
+
+\hfill \textbf{Fecha de la actividad:} 9 de Noviembre de 2025
+\vspace{10mm}
+%\addcontentsline{toc}{chapter}{Tarea 1}
+%\markboth{Tarea 1}{Tarea 1}
+
+En este capítulo analizaremos y plantearmos un método para resolver ecuaciones diferenciales numericamente basado en el método de Runge-Kutta útil para situaciones donde existe roce. Para ello, implementaremos un método de Runge-Kutta genérico en \lstinline{python}, para así instanciarlo con componenetes de una matriz de Runge-Kutta convenientes, junto con los respectivos pesos y nodos temporales. Luego aplicaremos este método a la resolución de un problema de cinemática.
+
+Para ello, tendremos en cuenta que un método de Runge-Kutta genérico se $s$ etapas se escribe de la siguiente manera: 
+
+\begin{equation} \label{eq:RK_gen}
+  K_{i} = hf\left( t_{n} + c_{i}h, y_{n} + \sum_{j=1}^{i-1}a_{ij}K_{j} \right), \qquad y_{n+1} = y_{n} + \sum_{i=1}^{s}b_{i}K_{i}
+\end{equation}
+Donde $h>0$ es el paso de tiempo, de manera que $t_{n} = t_{0} + nh$, $f$ es la función que define al problema $y^{\prime}(t)=f(t, y)$, y los coeficientes $a_{ij}$, $b_{i}$, $c_{i}$ son los componentes de la matriz de Runge-Kutta, los pesos y los nodos temporales, respectivamente. Estos se definen a través de una tabla de Butcher, como la del cuadro \ref{tab:butchosher_gen}
+\begin{table}
+  \centering
+  \begin{tabular}{c | c c c c } 
+    $c_{1}$ & 0 & & & \\
+    $c_{2}$ & $a_{21}$ & 0 & & \\
+    $\vdots$ & $\vdots$ & $\ddots$ & $\ddots$ & \\
+    $c_{s}$ & $a_{s1}$ & $\cdots$ & $a_{s,s-1}$ & 0 \\ 
+    \hline
+     & $b_{1}$ & $b_{2}$ & $\cdots$ & $b_{s}$ 
+  \end{tabular}
+  \caption{Tabla de Butcher para un método de Runge-Kutta genérico}
+  \label{tab:butchosher_gen}
+\end{table}
+\section{Método de Shu-Osher}
+El método de Shu y Osher es un esquema de Runge-Kutta de tercer orden, útil para resolver sistemas que presenten roce (\cite{Shuosher}). Podemos implementar este método utilizando su tabla de Butcher (cuadro \ref{tab:butchosher}).
+
+Implementamos el método explícitamente de la siguiente manera:
+\begin{lstlisting}
+  def shu_osher_exp(f, x0, tmax, dt, t0 = 0, **kwargs):
+    x0 = np.asarray(x0)#Considera el caso en que x0 es un escalar, y lo convierte en arreglo
+
+    t = np.arange(t0, tmax, dt)#Arreglo de tiempo
+    x = np.zeros((*t.shape, *x0.shape))#Se desempaquetan los iterables
+    x[0] = x0 
+    
+    #Se aplica explicitamente el método de Shu-Osher.
+    for i in range(t.size - 1):
+        K1 = dt*f(t[i], x[i], **kwargs)
+        K2 = dt*f(t[i] + 1*dt, x[i] + 1*K1)
+        K3 = dt*f(t[i] + 0.5*dt, x[i] + 0.25*K1 + 0.25*K2)
+        x[i+1] = x[i] + ((1/6)*K1 + (1/6)*K2 + (2/3)*K3)
+    return t, x
+\end{lstlisting}
+Donde definimos explícitamente las expresiones para cada $K$, obtenidas desarrollando la ecuación \ref{eq:RK_gen}, teniendo en cuenta que \lstinline{x0} y \lstinline{dt} representan las condiciones inciales y el valor de $h$, respectivamente.
+\\
+
+Por otro lado, podemos implementar un método general que tome una tabla de Butcher cualquiera y genere el método asociado a esta, de manera que podamos instanciar este codigo con la tabla del cuadro \ref{tab:butchosher} para obtener el método de Shu y Osher. Para ello, consideramos el siguiente código:
+\begin{lstlisting}
+def RK_gen(f, x0, tmax, dt, butch, t0 = 0, **kwargs):
+    x0 = np.asarray(x0) #Considera el caso en que x0 es un escalar, y lo convierte en arreglo
+
+    t = np.arange(t0, tmax, dt) #Arreglo de tiempo
+    x = np.zeros((*t.shape, *x0.shape)) #Se desempaquetan los iterables
+    x[0] = x0  #Definimos la condición inical 
+
+    shape = np.shape(butch) 
+
+    #Obtenemos los pesos y nodos temporales para aplicar el metodo de RK
+    a = butch[0:shape[0]-1, 1:] 
+    b = butch[shape[0] - 1, 1:]
+    c = butch[:, 0]
+    
+    #Aplicamos la forma general para el metodo de RK
+    for i in range(t.size - 1):
+        K = np.zeros((np.size(b), *x0.shape)) #Creamos un arreglo para almacenar los K
+        sum = 0
+        for k in range(0, np.size(b)):
+            K[k] = dt*f(t[i] + c[k]*dt, x[i] + sum, **kwargs)
+            for j in range(1, k):
+              sum = sum + a[k-1, j-1]*K[j+1]
+            
+        sum2 = 0
+
+        for p in range(1, np.size(b)+1):
+            sum2 = sum2 + b[p-1]*K[p-1]
+
+        x[i+1] = x[i] + sum2
+    return t, x
+
+\end{lstlisting}
+Donde implementamos explícitamente las fórmulas \eqref{eq:RK_gen}, teniendo en cuenta que \lstinline{butch} es la tabla de Butcher a utilizar entregada como un arreglo de \lstinline{numpy}.
+
+Teniendo esta función, podemos instanciarla con el cuadro \ref{tab:butchosher} para obtener el método de Shu y Osher. Este proceso es equivalente a implementar el método explicitamente, por lo que esta será la función utilizada para tratar ecuaciones diferencials a lo largo de este capítulo.
+\begin{table}
+  \centering
+  \begin{tabular}{c | c c c } 
+    0 &  & &  \\
+    1 & 1 &  & \\
+    1/2 & 1/4 & 1/4 & \\
+    \hline
+     & 1/6 & 1/6 & 2/3 
+  \end{tabular}
+  \caption{Tabla de Butcher asociada al método de Shu y Osher}
+  \label{tab:butchosher}
+\end{table}
+
+
+\section{Movimiento de proyectil}
+Considerando las ecuaciones
+\begin{equation} \label{eq:edo}
+  \vec{v}^{\, \prime} = \vec{g} - \mu ||\vec{v}||\vec{v}, \quad \vec{r}(0) = \vec{r}_{0}, \quad \vec{v}(0) = \vec{v}_{0}
+\end{equation}
+Primero, notamos que como $||\vec{v}||\vec{v}$ tiene unidades de $[\rm{m}^{2}/\rm{s}^{2}]$ y $\vec{g}$ tiene unidades de $[\rm{m}/\rm{s}^{2}]$, es necesario que $\mu$ tenga unidades de $[1/\rm{m}]$ para que estos terminos puedan sumarse y la ecuación tenga sentido. Luego, teniendo en cuenta que $\vec{v}^{\, \prime} = \frac{d\vec{v}}{dt}$, tenemos que para cada componente vectorial, el problema consiste de 7 variables, las cuales, como muestra el cuadro \ref{tab:unidades}, están en terminos de 2 unidades fundamentales, longitud ($L$) y tiempo ($T$). Luego, de acuerdo al teorema $\pi$ de Buckingham, es posible normalizar el sistema de manera que se eliminen tantas variables como hay unidades fundamentales, es decir, es posbile eliminar 2 variables. 
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{|c|c|c|c|c|c|c|c|}
+    \hline
+    Variable & $t$  & $v$ & $v_{0}$ & $g$ & $\mu$ & $r$ & $r_{0}$ \\
+    \hline
+    Unidad & $T$ & $LT^{-1}$ & $LT^{-1}$ & $LT^{-2}$ & $L^{-1}$ & $L$ & $L$  \\
+    \hline
+  \end{tabular}
+  \caption{Variables del problema con sus respectivas unidades}
+  \label{tab:unidades}
+\end{table}
+
+Ahora, si normalizamos el sistema con respecto a las constantes $v_{0} = ||\vec{v}_{0}||$ y $g = ||\vec{g}||$, notando que las cantidades $v_{0}/g$ y $v_{0}^{2}/g$ tienen unidades de tiempo y espacio, respectivamente, podemos crear el $\Pi$-grupo:
+\begin{equation} \label{eq:pigroup}
+  \begin{aligned}
+    \Pi_{1} = t \cdot \left( \frac{g}{v_{0}} \right) = \tau, \quad 
+    \Pi_{2} = v\cdot \left( \frac{1}{v_{0}} \right) = \nu,& \quad
+    \Pi_{3} = v_{0} \cdot \left( \frac{1}{v_{0}} \right) = 1, \quad
+    \Pi_{4} = g \cdot \left( \frac{1}{g} \right) = 1, \\
+    \Pi_{5} = \mu \cdot \left( \frac{g}{v_{0}^{2}} \right) = \tilde{\mu}, \quad
+    \Pi_{6} = r \cdot & \left( \frac{g}{v_{0}^{2}} \right) = \rho, \quad
+    \Pi_{7} = r_{0} \cdot \left( \frac{g}{v_{0}^{2}} \right) = \rho_{0}
+  \end{aligned}
+\end{equation}
+Donde eliminamos las constantes $v_{0}$ y $g$, de manera que el problema original puede reescribirse como: 
+\begin{equation} \label{eq:edonorm}
+  \frac{d\vec{\nu}}{d\tau} = \frac{1}{g}\vec{g} - \tilde{\mu} ||\vec{\nu}||\vec{\nu}, \quad \vec{\rho}(0) = \vec{\rho}_{0}, \quad \vec{\nu}(0) = \frac{1}{v_{0}}\vec{v}_{0} = \vec{\nu}_{0}
+\end{equation}
+Donde $\vec{\nu}_{0}$ es un vector unitario en la dirección de la velocidad inicial y $\frac{1}{g} \vec{g} = \hat{g}$ es el vector unitario en dirección de la aceleración de gravedad, en este caso $\hat{g} = - \hat{y}$.
+
+Ahora, consideramos el problema planteado en la ecuación \eqref{eq:edonorm} teniendo en cuenta que $\vec{\rho}(\tau) = x(\tau)\hat{x} + y(\tau)\hat{y}$, $\hat{g} = -\hat{y}$ y  notando además las condiciones iniciales:
+\begin{equation}
+  \vec{\rho}(0)=\vec{0}, \quad \vec{\nu}(0) = (\cos{(\alpha)}\hat{x} + \sin{(\alpha)}\hat{y}),
+\end{equation}
+y el hecho de que $\frac{d\vec{\rho}}{d\tau}=\vec{\nu}$.
+
+Tenemos el siguiente sistema de ecuaciones diferenciales normalizado:
+\begin{equation} \label{eq:normsist}
+  \begin{aligned}
+    \frac{d\nu_{x}}{d\tau} = -\tilde{\mu}||\vec{\nu}||\nu_{x}, \quad
+    \frac{d\nu_{y}}{d\tau} = -1 - &\tilde{\mu}||\vec{\nu}||\nu_{y}, \quad
+    \frac{d\rho_{x}}{d\tau} = \nu_{x}, \quad
+    \frac{d\rho_{y}}{d\tau} = \nu_{y}, \\
+    %\frac{d\vec{\rho}}{d\tau} = \nu_{x}\hat{x} + \nu_{y}\hat{y}, \quad
+    \vec{\rho}(0) = \vec{0}, \quad \vec{\nu}(0) = &\cos{(\alpha)}\hat{x} + \sin{(\alpha)}\hat{y}.
+  \end{aligned}
+\end{equation}
+
+Ahora, podemos resolver este sistema utilizando el método de Shu y Osher planteado anteriormente, para ello, consideramos el siguiente código, donde resolvemos el sistema para distintos valores de $\mu$ y $\alpha$. Notar que esto es un sistema de 4 ecuaciones diferenciales, una para cada componente del vector de posición y velocidad. %Notar que, para todo el desarrollo, análisis y gráficos que siguen, estaremos trabajando en variables normalizadas.
+
+\begin{lstlisting}
+#Usamos esta tabla de Butcher para utilizar el método de Shu-Osher
+butcher = np.array([[0, 0, 0, 0],
+                   [1, 1, 0, 0],
+                   [0.5, 0.25, 0.25, 0],
+                   [0, 1/6, 1/6, 2/3]])
+
+#Definimos el sistema a resolver
+def fullvec(t, x, mu):
+    posx, posy, velx, vely = x
+    mag = np.hypot(velx, vely)
+    return np.array([velx, vely, -mu*mag*velx, -1-mu*mag*vely])
+
+def caso(mu, alpha): #Definimos una solución genérica para iterar con distintos valores de 
+                     #mu y alpha.
+    pos0x = 0
+    pos0y = 0
+    vel0x = np.cos(alpha)
+    vel0y = np.sin(alpha)
+
+    t, X = RK_gen(fullvec, x0 = [pos0x, pos0y,vel0x, vel0y], tmax = 2, dt = 0.001, 
+    butch = butcher, mu = mu)
+
+    posx, posy, velx, vely = X[:, 0], X[:, 1], X[:, 2], X[:, 3]
+
+    posytrue = posy[posy > 0]
+    posxtrue = posx[:posytrue.size]
+
+    return posxtrue, posytrue
+
+
+for mu in np.linspace(0, 1, 6): #Graficamos para distintos valores de mu
+   x, y = caso(mu, np.pi/4)
+
+for alpha in np.linspace(0, np.pi/2, 6): #Graficamos para distintos valores de alpha
+  x, y = caso(0.6, alpha)
+
+for alpha in np.linspace(0, np.pi/2, 7): #Graficamos para distintos valores de alpha en 
+                                         #condiciones ideales
+  x, y = caso(0, alpha)
+\end{lstlisting}
+
+\begin{figure}
+  \centering
+  \begin{minipage}[b]{0.48 \textwidth}
+    \centering
+    \includegraphics[width = 1.1\textwidth]{Shu-Osher/mu.pdf}
+    \caption{Comparación de trayectorias en $x(t)$ e $y(t)$ para distintos valores de $\mu$ con $\alpha = \pi /4$.}
+    \label{fig:mu}
+  \end{minipage}
+  \hfill
+  \begin{minipage}[b]{0.48 \textwidth}
+    \centering
+    \includegraphics[width = 1.1\textwidth]{Shu-Osher/alpha.pdf}
+    \caption{Comparación de trayectorias en $x(t)$ e $y(t)$ para distintos valores de $\alpha$ con $\mu = 0.6$.}
+    \label{fig:alpha}
+  \end{minipage}
+  %\caption{Gráficos de trayectorias para distintas condiciones}
+  %\label{fig:alphamu}
+\end{figure}
+
+
+Notando que la función \lstinline{fullvec(t, x)} representa el sistema normalizado de la ecuación \eqref{eq:normsist}. De este modo, generamos los gráficos de las figuras \ref{fig:mu}, \ref{fig:alpha} y \ref{fig:ideal}. 
+Notar además que al ejecutar el código anterior, se le hizo una pequeña modificación a la función \lstinline{RK_gen} para que esta deje de integrar la función una vez que la posición vertical sea $0$, es decir, cuando el proyectil vuelve a tocar el suelo.
+\begin{lstlisting}
+
+  def RK_gen(f, x0, tmax, dt, butch, t0 = 0, **kwargs):
+  [...37 líneas...]
+  
+        for p in range(1, np.size(b)+1):
+            sum2 = sum2 + b[p-1]*K[p-1]
+
+        x[i+1] = x[i] + sum2
+
+        if x[i+1][1]  <= 0:
+            return t,x
+
+    return t, x
+\end{lstlisting}
+
+De la figura \ref{fig:mu}, se puede observar que la distancia en $x$ que recorre el proyectil es mayor a medida que disminuye el valor de $\mu$, siendo este máximo cuando $\mu = 0$, es decir, cuando el movimiento no presenta roce. Por otro lado, de la figura \ref{fig:alpha}, se puede observar que la distancia en $x$ es máxima cuando $\alpha = 0.785 \approx \pi/4$, mientras que esta es nula cuando $\alpha = 1.571 \approx \pi/2$, pues aquí el objeto se lanza completamente hacia arriba. Finalmente, cuando $\alpha = 0$, el objeto nunca cambia su posición vertical, por lo que su trayectoria no puede observarse en la figura.
+\\
+
+
+Finalmente, observamos que en la solución exacta, cuando $\mu = 0$, el desplazamiento horizontal es máximo, tal como muestra la figura \ref{fig:mu}. Es más, observando la figura \ref{fig:ideal}, vemos que la configuración $\mu = 0$ y $\alpha = \pi/4$ produce una trayectoria que maximiza simultaneamente el desplazamiento vertical y horizontal. Es más, para cualquier valor de $\mu \neq 0$, el desplazamiento horizontal se maximiza con $\alpha = \frac{\pi}{4}$.
+
+\begin{figure}
+  \centering
+  \includegraphics[width = 0.75\textwidth]{Shu-Osher/ideal.pdf}
+  \caption{Trayectoria ideal con $\mu = 0$ y distintos valores de $\alpha$.}
+  \label{fig:ideal}
+\end{figure}
+
+\section*{Conclusiones}
+Para concluir, hemos visto que es posible, y sumamente conveniente, crear un método de Runge-Kutta genérico que pueda instanciarse con cualquier tabla de Butcher. Además, hemos aplicado un método conveniente a un problema de física de variables normalizadas, pudiendo así observar directamente los efectos del roce con aire en el movimiento de un proyectil.
+
+\section*{Agradecimientos}
+Para finalizar, este capítulo fue escrito principalmente por Alvaro Osses, con contribuciones de Joaquín Parra en la aplicación del Teorema-$\Pi$ de Buckingham, e Ignacio Falcón en la redacción.
+\\
+Para la creación de este capítulo no se utilizaron herramientas de inteligencia artificial.
+
+\end{document}

@@ -1,0 +1,130 @@
+\documentclass[../portafolio.tex]{subfiles}
+
+\begin{document}
+
+ \chapter{Implementación de métodos numéricos en análisis de estabilidad de un péndulo invertido conectado a un resorte}
+ \label{ch:spring}
+\chapterauthor{Joaquín Parra, Ignacio Falcón, Alvaro Osses}
+
+\hfill \textbf{Fecha de la actividad:} 26 de Octubre de 2025\\
+
+\vspace{10mm}
+
+En este capítulo haremos uso del método de la bisección (implementado via \lstinline!python!) para un problema particular en el contexto de la mecánica: un péndulo invertido de largo $\ell$ con una masa $m$ en su extremo con un resorte conectado a la barra del péndulo a una altura $d<\ell$ como se muestra en la figura \ref{fig:pendulum}. 
+Determinaremos la energía potencial del sistema y observaremos como la configuración de las constantes afecta a la estabilidad del mismo.
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.3]{pendulum/pendulum.png}
+  \caption{Problema a analizar.}
+  \label{fig:pendulum}
+\end{figure}
+
+\section{Determinación de la energía potencial del sistema}
+La energía potencial $U$ de una partícula o de un sistema de partículas surge al describir cómo ciertas configuraciones del sistema están asociadas a interacciones que condicionan su dinámica. En muchos sistemas físicos, las partículas no se mueven libremente, sino que están sometidas a fuerzas conservativas y a ligaduras que restringen su movimiento. Cuando las fuerzas son conservativas, pueden derivarse de un potencial $U$, el cual cuantifica su influencia sobre la evolución del sistema.\\
+ En la figura \ref{fig:pendulum}, podemos identificar tres fuerzas actuando sobre la masa $m$: identificamos la fuerza peso $\vec{W}$ ejercida sobre la masa, una fuerza de ligadura\footnote{Comentarios sobre mecánica clásica cortesía de estudiante de ingeniería civil aeroespacial.}  $\vec{f}$ o tensión de la barra que la conecta a tierra y la fuerza elástica $\vec{F}_e$ del resorte al que está conectada. Recordemos que la tensión no es una fuerza conservativa, por lo que no aporta a la energía potencial del sistema.
+  Entonces, las únicas fuerzas que aportan términos a la energía potencial de la masa son la peso y la elástica. Considerando un sistema cartesiano usual con origen en la base del cable, las energías potenciales quedan definidas como:
+  \begin{equation}
+    U_g(y) = mgy, \qquad U_e(x) = \frac{1}{2}kx^2. \label {eq:cart_u}
+  \end{equation}
+ Donde se tiene una altura arbitrariamente pequeña para que que $g$ se considere constante y obtener así la expresión de arriba, $x$ siendo la deformación del resorte a altura $d$ e $y$ siendo la altura de la masa. Puesto que el movimiento está restringido por una barra (de masa despreciable y no deformable), nuestra masa se moverá sobre un arco de circunferencia, por lo que puede ser apropiado realizar un cambio de coordenadas cartesianas a polares. Consideremos:
+ \begin{equation}
+   x = d \sin (\theta), \qquad y = \ell \cos (\theta), \label{eq:new_cords}
+ \end{equation}
+ con $\ell$ el largo de la barra y $\theta$ el ángulo que forma el cable con la normal (en radianes). Implementando el cambio de coordenadas en \eqref{eq:cart_u}, obtenemos:
+ \begin{equation}
+   U_g(\theta) = mg\ell \cos ( \theta ), \qquad U_e(\theta) = \frac{1}{2}k d^2 \sin^2 (\theta). \label{eq:polar_u}
+ \end{equation}
+Notemos como con el cambio de coordenadas redujimos los grados de libertad del sistema de dos a uno, y con el uso del teorema $\Pi$ podemos normalizar el sistema. En particular, vemos que dividiendo por el $\Pi$ grupo $\Pi_1 = mg\ell$, las ecuaciones \eqref{eq:polar_u} quedan normalizadas. Tenemos entonces que la energía potencial normalizada del sistema, definida como la suma de la energías potenciales gravitatoria y elástica (normalizadas) es:
+\begin{equation}
+  u(\theta) = \cos (\theta) + \beta \sin^2  (\theta) \label{eq:u_norm},
+\end{equation}
+con $\beta = kd^2 / 2mg\ell$.\\
+Queda ahora identificar los puntos de equilibrio del sistema, que se deducen de la ecuación:
+\begin{equation}
+  \vec{\nabla} u=\vec{0},
+\end{equation}
+o en nuestro caso, de forma más simplificada:
+\begin{equation}
+  \frac{du}{d\theta}=0. \label{eq:du0}
+\end{equation}
+
+\section{Derivada del potencial y búsqueda de ceros}
+En la figura \ref{fig:mult_theta} podemos ver soluciones numéricas para la derivada de \eqref{eq:u_norm}, haciendo uso tanto de derivadas centradas, adelantadas y retrasadas,  variando el parámetro $\beta$. Podemos ver que para valores $\beta > 0.5$ aparece un segundo cero, un cero no trivial $\theta_{nt}$.  
+ \begin{figure}
+   \centering
+    \includegraphics[scale=0.4]{pendulum/theta.pdf}
+    \caption{$u'(\theta)$ a distintos $\beta$ para $0\leq \theta \leq \pi/2$.}
+    \label{fig:mult_theta}
+  \end{figure}
+  
+  Identificaremos estos ceros mediante el método de la bisección, tal como se muestra a continuación.
+  \begin{lstlisting}
+def bis(f, a, b, tol=1e-10, iter=100, **kwargs): 
+    iter_count = 0
+
+    while iter_count < iter:
+        c = 0.5 * (a + b)
+
+        if abs(f(c, **kwargs)) < tol or abs(b - a) < tol:
+            return c
+
+        if f(a, **kwargs) * f(c, **kwargs) < 0:
+            b = c
+        else:
+            a = c
+        iter_count += 1
+
+def u(theta, beta):
+      return np.cos(theta) + beta * (np.sin(theta))**2
+
+def du_cen(f, theta, h=1e-5, **kwargs):
+    return (f(theta + h, **kwargs) - f(theta - h, **kwargs)) / (2*h)
+
+def u_prime(theta, beta):
+    return du_cen(u, theta, beta=beta)
+
+def cero(beta):      #retorna el cero no trivial para un cierto beta
+   if beta <= 0.5:
+      return "No hay cero no trivial"
+   else: 
+      return bis(u_prime, 0.5, 1.1, beta=beta)
+\end{lstlisting}
+
+Este código se utilizará ahora para encontrar los ceros no triviales para distintos betas, para lo cual necesitaremos trabajar con función del potencial $u'(\theta)$, la cual se trabajará mediante un esquema de derivada centrada al igual que en la figura \ref{fig:mult_theta}.
+ Implementando el código, obtenemos los ceros del cuadro \ref{tab:nt}. 
+ \begin{table}
+   \centering
+   \begin{tabular}{ |c | c | c | }
+     \hline 
+     $\beta$ & $\theta_{nt}$ \\ \hline
+     $0.6$ &  $0.58568$ \\ \hline
+     $0.7$ & $0.77519$   \\ \hline
+     $0.8$ & $0.89566$   \\ \hline
+     $0.9$ & $0.98176$  \\ \hline
+     $1.0$ & $1.04719$   \\ \hline 
+    \end{tabular}
+    \caption{Valores de $\theta_{nt}$ para cada $\beta$, truncados al quinto decimal.}
+    \label{tab:nt}
+  \end{table}
+En la figura \ref{fig:nt_vs_beta} podemos ver la curva descrita por los ceros no triviales en función de $\beta$ como variable continua (de pasos muy cortos) , y superpuestos están los ceros ya conocidos. 
+ \begin{figure}
+  \centering
+   \includegraphics[scale=0.4]{pendulum/nt_vs_beta.pdf}
+   \caption{$\theta_{nt}(\beta)$ para $0.5<\beta \leq 1$.}
+   \label{fig:nt_vs_beta}
+ \end{figure}
+\section{Tipos de equilibrio}
+Finalmente, queda estudiar el tipo de equilibrio que se tiene en el cero trivial y en los no triviales. Estos se pueden determinar fácilmente con el criterio de la segunda derivada, por el cual tenemos que si $\theta$ es un punto de equilibrio, si $u''(\theta)>0$, entonces estamos frente a un punto de equilibrio estable, y si $u''(\theta)<0,$ entonces estamos frente a un punto de equilibrio inestable. Mediante el uso de derivadas de segundo orden adelantadas y centradas, podemos estimar estos valores y determinar el tipo de equilibrio. En la figura \ref{fig:second} podemos ver que para todos los ceros no triviales utilizados, la segunda derivada toma valores negativos, por lo cual estos representan puntos de equilibrio inestables, lo cual era de esperarse dada la configuración del sistema. Sin embargo, vemos que para valores de $\beta$ menores a 0.5, $u''(0) $ adopta valores negativos, por lo que representa también equilibrio inestable en estos casos. Dado que $\beta = kd^2/(2mgl)$, podemos interpretar estos valores como casos en los cuales la fuerza peso le gana a la fuerza elástica, por lo que perturbaciones que aumenten ligeramente el valor de $\theta$ hacen que el sistema se aleje del punto de equilibrio, pues la fuerza elástica no es capaz de contrarrestar al peso. Finalmente, para $\beta$ mayores a 0.5, vemos que se adoptan valores positivos, por lo que en estas configuraciones donde la fuerza elástica vence a la peso, al perturbar el sistema y aumentar ligeramente $\theta$, este busca volver a la posición $\theta =0$, por lo que se clasifica como punto de equilibrio estable. 
+
+\begin{figure}
+  \centering
+  \includegraphics[scale=0.4]{pendulum/second.pdf}
+  \caption{Segunda derivada del potencial versus $\beta$ evaluada en los puntos de equilibrio.}
+  \label{fig:second}
+\end{figure}
+
+\section*{Conclusiones}
+En este breve capítulo hicimos uso de el método de la bisección para estudiar un problema poco convencional en mecánica, encontrando puntos de equilibrio y clasificándolos con el uso de métodos numéricos, a la vez que aprendimos criterios al momento de realizar análisis de equilibrio en sistemas mecánicos. Pudimos extraer información sin tener que calcular (necesariamente) derivadas, y comprobamos resultados con modelos analíticos. Podemos concluir que lo anterior se logró de manera efectiva gracias a la comparaciones realizadas, las cuales dan cuenta de la precisión de los cálculos realizados.
+
+\section*{Agradecimientos}
+Este capítulo fue principalmente escrito por Joaquín Parra, con revisiones tanto de código como de contenido de parte de sus compañeros de trabajo Alvaro Osses e Ignacio Falcón, quienes aportaron también escribir el código de la bisección y con el análisis físico de la primera sección. Se agradece al profesor responsable del curso, Dr. Roberto Navarro por entregar las nociones necesarias para realizar este trabajo y por sus comentarios en clases, los cuales siempre son de utilidad al momento de implementar código. También se agradece a Jesús Coronel, estudiante de segundo año de ingeniería civil aeroespacial por breves comentarios sobre el concepto de ligaduras, los cuales se ocuparon al inicio del capítulo. Finalmente, se menciona que se utilizó ayuda de ChatGPT y Gemini a la hora de realizar los gráficos del capítulo.

@@ -1,0 +1,58 @@
+\documentclass[../portafolio.tex]{subfiles}
+
+\begin{document}
+
+\chapter{El Zen de Python} \label{ch:zen}
+
+\chapterauthor{Joaquín Parra, Ignacio Falcón, Alvaro Osses}
+
+\hfill \textbf{Fecha de la actividad:} 8 de Octubre de 2025
+\vspace{10mm}
+%\addcontentsline{toc}{chapter}{Tarea 1}
+%\markboth{Tarea 1}{Tarea 1}
+
+En este capitulo, analizaremos el paquete \lstinline{this}, el cual imprime el Zen de Python codificado con un cifrado particular. Para ello, discutiremos como encontrar este módulo en la computadora, y luego analizaremos directamente el código para comprender su funcionamiento y como este logra imprimir el Zen de Python.
+
+\section{El Zen de Python}
+
+El archivo \lstinline{this} fue encontrado utilizando el comando \lstinline{find} de bash, en particular, se utiliza el comando \lstinline[language = bash]{$ find -name this.py} que retorna una lista de ubicaciones de archivos con ese nombre (posiblemente debido a que esta computadora ha tenido varias instalaciones de \lstinline{python} distintas). Tomando solo una, se utiliza el comando cd para ir al directorio en el que se encuentra, específicamente, se ejecuta \lstinline[language = bash]{$ cd anaconda3/lib/python3.13} y luego, se abre el archivo utilizando el editor de texto nvim, \lstinline[language = bash]{$ nvim this.py}. Notar que la dirección del archivo es \lstinline[language = bash]{/home/$USER$/anaconda3/lib/python3.13/this.py}. Cabe añadir que el metodo anteriormente descrito es valido únicamente para computadoras con sistema operativo Linux, en particular, el proceso fue realizado en un sistema con Arch Linux 6.16.5.
+
+Tenemos que el archivo contiene el siguiente codigo:
+\begin{lstlisting}[language = python]
+s = """Gur Mra bs Clguba, ol Gvz Crgref
+
+Ornhgvshy vf orggre guna htyl.
+[...17 líneas...]
+Anzrfcnprf ner bar ubaxvat terng vqrn -- yrg'f qb zber bs gubfr!"""
+
+d = {}
+for c in (65, 97):
+    for i in range(26):
+        d[chr(i+c)] = chr((i+13) % 26 + c)
+
+print("".join([d.get(c, c) for c in s]))
+\end{lstlisting}
+
+Primero, notar que 65 y 97 representan los códigos ASCII de los caracteres "A" y "a" respectivamente \citep{ASCIIwiki}, 26 representa la cantidad de caracteres en el abecedario inglés. Además, tenemos que la función de este programa es sumarle 13 al código ASCII de todos los caracteres (tanto mayúsculas como minúsculas).
+
+Nótese que el primer ciclo for \lstinline{for c in (65, 97)} utiliza una tupla como iterable, es decir, este bucle tendrá dos ciclos, uno donde \lstinline{c = 65} y otro donde \lstinline{c = 97}. Recordando que 65 y 97 son los códigos ASCII de "A" y "a" respectivamente, podemos deducir que el propósito de este primer \lstinline{for} es decodificar primero los caracteres mayúsculos y luego los minúsculos. 
+\\
+
+El segundo ciclo tiene precisamente ese propósito, notando que \lstinline{d} es una variable de tipo diccionario, esta guardará categorías y elementos asociados a estas. Teniendo esto en cuenta, y recordando que \lstinline{chr(n)} retorna el caracter asociado al código ASCII \lstinline{n}, el segundo \lstinline{for} asociará un caracter al que se encuentre a 13 espacios de este, por ejemplo, en el primer ciclo (\lstinline{c = 65}, \lstinline{i = 0}) tendremos \lstinline{d[chr(0 + 65)] = chr((0 + 13) % 26 + 65)} donde \lstinline{13%26 + 65 = 13 + 65 = 78}, es decir \lstinline{d[chr(65)] = chr(78)} esto es, a la categoría en \lstinline{d} dada por \lstinline{chr(65) = "A"} le asocia el objeto \lstinline{chr(78) = "N"}. Dicho de otro modo, al caracter "A" le asocia el caracter a 13 espacios de este, en este caso "N". Esto lo repite para todos los caracteres del abecedario en mayúsculas y minúsculas (para ambos ciclos del \lstinline{for} anterior). 
+\\
+
+Cabe añadir que el operador \lstinline{%} (modulo) tiene la función de "contar" cuanto se pasa la suma \lstinline{i + 13} de 26, por ejemplo, si \lstinline{i + 13 = 27} entonces \lstinline{(i+13)%26 = 27%26 = 1}, en caso de que la suma sea menor que 26 simplemente se retorna el valor de la suma (\lstinline{(i + 13)%26 = i + 13} si \lstinline{i+13 <  26}) de esta manera la codificación se mantiene dentro de los caracteres del abecedario, pues si pasan del ultimo caracter en este subconjunto la lista se devuelve al primer caracter, "A" o "a" dependiendo del caso. Por ejemplo, para \lstinline{i = 12}, \lstinline{c = 65} tendremos \lstinline{d[chr(12 + 65)] = chr((12+13) % 26 + 65)}, notando que \lstinline{12 + 65 = 77} y \lstinline{(12+13) % 26 = 25%26 = 25}, con lo cual \lstinline{(12+13) % 26 + 65 = 25 + 65 = 90}, esto es \lstinline{d[chr(77)] = chr(90)}, o bien \lstinline{d["M"] = "Z"}. En cambio, para \lstinline{i = 13}, \lstinline{c = 65} \lstinline{d[chr(13 + 65)] = chr((13+13) % 26 + 65)}, donde tenemos que \lstinline{(13+13) % 26 = 26 % 26 = 0}, por lo tanto \lstinline{d[chr(78)] = chr(65)}, esto es \lstinline{d["N"] = "A"}
+\\
+
+En la última línea, se define un string vacío \lstinline{""}. La función \lstinline{get(c, d)} retorna el valor, o valores, asociado a la categoría \lstinline{c}, en caso de que este no exista retorna \lstinline{d}. Luego, la función \lstinline{join} concatena ese caracter al string vacío. Es decir, en esta última línea, se utiliza un ciclo \lstinline{for} para iterar por cada caracter del string \lstinline{s} y concatena su caracter asociado por el diccionario \lstinline{d} al string vacío; en caso de que este caracter no exista como categoría en \lstinline{d}, como es el caso de los puntos, comas y guiones, simplemente retorna el mismo caracter. Dicho de otro modo, el ciclo \lstinline{[d.get(c, c) for c in s]} tiene la función de "decodificar" \lstinline{s}. Por ejemplo, para el caso particular en que \lstinline{s = "Gur Mra bs Clguba"} el código iterará por \lstinline{s} y decodificará cada caracter para luego concatenarlo al string vacio \lstinline{""} mediante \lstinline{join}. Es decir, tomará el primer caracter de \lstinline{s} (\lstinline{"G"}), lo pasará por el alogritmo ya descrito y lo convertirá en \lstinline{"T"}, luego lo concatena al string vacio, de manera que este pase a ser \lstinline{"T"}. Este proceso se repite para cada caracter en \lstinline{s} resultando finalmente en que el string vacio se convierta en la version descifrada del \lstinline{s}, esto es \lstinline{"The Zen of Python"}. Aplicando este proceso al string \lstinline{s} completo, resulta finalmente en el Zen de Python decodificado. Notar que el tipo de cifrado que realiza el módulo se denomina ROT13, pues a cada letra del abecedario le asigna una letra de un abecedario "rotado", en este caso por 13 espacios. (\cite{ROT13})
+
+\section*{Conclusiones}
+Así, hemos descifrado el funcionamiento del modulo \lstinline{this.py}. El trabajo invertido en este capitulo es un recordatorio de la importancia de ser claro y explícito a la hora de programar, pues así será mucho más fácil entender el código a simple vista y no será necesario analizarlo linea por linea, como fue el caso con este modulo.
+
+\section*{Agradecimientos}
+Este capitulo fue principalmente escrito por Alvaro Osses Nieto, con contribuciones de Joaquín Parra Sanchez e Ignacio Falcón Painemal para el desciframiento del código en cuestión, y búsqueda de referencias pertinentes al capitulo.
+
+Cabe añadir que durante la escritura de este capitulo no se utilizaron herramientas de inteligencia artificial.
+
+
+\end{document} 

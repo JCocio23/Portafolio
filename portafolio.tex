@@ -1,0 +1,159 @@
+% Formato de portafolio
+% Documento adaptado de https://github.com/PlasmaPhysicsUdeC/FondecyTeX por Roberto Navarro <roberto.navarro@udec.cl>
+
+% Este documento es modular, es decir, esta separado en varios
+% archivos para facilitar su uso. Ver uso del paquete `subfiles`:
+% https://www.overleaf.com/learn/latex/Multi-file_LaTeX_projects
+
+\documentclass[twoside]{report}
+
+\usepackage{subfiles}           % permite que el documento sea modular
+
+\usepackage[paper=letterpaper,left=3cm,right=3cm,top=3cm,bottom=2cm,includefoot]{geometry}
+
+\usepackage[table,dvipsnames]{xcolor}
+\usepackage{amsmath,amssymb, amsthm}
+\newtheorem*{teorema}{Teorema}
+\usepackage{enumitem}
+\setenumerate{itemsep=-3pt,topsep=3pt}
+\setdescription{itemsep=-3pt,topsep=3pt,leftmargin=!,labelwidth=4.5cm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\graphicspath{{./img/} {./tex/img/} {../img/} }
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fuentes y encoding
+\usepackage[shorthands = off, spanish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\spanishdecimal{.}
+
+%%% Comente/Descomente las siguientes lineas para cambiar la fuente del texto
+% \usepackage{DejaVuSans}
+% \renewcommand*\familydefault{\sfdefault}
+% \usepackage{sansmath}
+% \sansmath
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% bibliografia: descomente estas dos lineas para usar estilo numerico, e.g. [1].
+% \usepackage[square,numbers,sort&compress]{natbib}
+% \bibliographystyle{apsrev4-1}
+
+%%% bibliografia: descomente estas dos lineas para usar estilo autor-año, e.g. (Navarro, 2022).
+\usepackage[authoryear]{natbib}
+\bibliographystyle{aipauth4-1}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Configuracion de codigos python en el documento
+\usepackage{listings}
+\usepackage{accsupp}
+\newcommand{\noncopynumber}[1]{
+    \BeginAccSupp{method=escape,ActualText={}}
+    #1
+    \EndAccSupp{}
+}
+\lstset{
+  language=Python,
+  keepspaces=true,
+  backgroundcolor=\color{Gray!10},
+  basicstyle=\ttfamily\small,
+  identifierstyle=\color{Maroon},
+  keywordstyle=\color{RoyalBlue},
+  commentstyle=\color{OliveGreen!70},
+  stringstyle=\color{BrickRed},
+  showstringspaces=false,
+  % frame=single,
+  columns=fullflexible,
+  numbers=left,
+  numberstyle=\tiny\color{Black}\noncopynumber,
+  numbersep=1pt,
+  literate=%Algunos caracteres acentuados comunes que dan problemas en listings
+         {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+         {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+         {à}{{\`a}}1 {è}{{\`e}}1 {ì}{{\`i}}1 {ò}{{\`o}}1 {ù}{{\`u}}1
+         {À}{{\`A}}1 {È}{{\`E}}1 {Ì}{{\`I}}1 {Ò}{{\`O}}1 {Ù}{{\`U}}1
+         {ñ}{{\~n}}1 {Ñ}{{\~N}}1
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Configuracion de encabezados y pies de pagina
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\renewcommand{\footrulewidth}{0.4pt}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyfoot{}
+\fancyfoot[RE,RO]{\thepage}
+\fancyfoot[LO,LE]{\textcolor[RGB]{127,127,127}{Portafolio - Física Computacional II (\the\year)}}
+
+\fancyhead[LE,RO]{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Define \chapterauthor{} para declarar autores por capitulo
+\usepackage[colorlinks, citecolor=cyan!80!black, urlcolor=cyan]{hyperref}
+
+\makeatletter
+\newcommand\chapterauthor[1]{%
+  {\parindent0pt\vspace*{-2em} \LARGE #1 \par \vspace*{2em}}
+  \@afterheading%
+  %
+  \phantomsection% crea anchor \@currentHref
+  \addtocontents{toc}{\protect\vspace{-0.7\baselineskip}}%
+  \addtocontents{toc}{%
+    \protect\contentsline{chapter}%
+    {\phantom{\protect\numberline{\thechapter}}\textnormal{\textsc{#1}}}%
+    {}{\@currentHref}% 4 argumentos por hyperref
+  }
+}
+\makeatother
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+% ASEGÚRESE DE COLOCAR SUS DATOS EN LA PORTADA
+\subfile{tex/portada}
+
+
+\tableofcontents
+
+
+%%% con \subfile se incluyen archivos externos
+\subfile{tex/introduccion}
+\subfile{tex/presentacion-estudiante}
+
+\part*{Evidencias de aprendizaje}  % cuerpo del portafolio
+\addcontentsline{toc}{part}{Evidencias de aprendizaje}
+\markboth{Evidencias de aprendizaje}{Evidencias de aprendizaje}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Agregue su trabajo a partir de acá usando \subfile{}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subfile{tex/pyzen.tex}
+\subfile{tex/funciones_numpy.tex}
+\subfile{tex/Catalan.tex}
+\subfile{tex/derivada_centr_tres_puntos.tex}
+\subfile{tex/lotka.tex}
+\subfile{tex/shuosher.tex}
+\subfile{tex/secante.tex}
+\subfile{tex/eulerimp.tex}
+\subfile{tex/pendulum.tex}
+\subfile{tex/legendre.tex}
+\subfile{tex/c02.tex}
+% Agregue su trabajo hasta acá lol
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Conclusiones y referencias
+\subfile{tex/conclusion-global}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Puede usar el capítulo de apéndice para agregar sus códigos completos si lo desea
+% \appendix
+% \subfile{tex/...}
+
+% lista de referencias guardadas en referencias.bib
+\bibliography{referencias}
+
+\end{document}

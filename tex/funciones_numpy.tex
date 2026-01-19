@@ -1,0 +1,164 @@
+\documentclass[../portafolio.tex]{subfiles}
+\begin{document}
+
+
+\chapter{Análisis de Funciones en Numpy y Resolución de problemas}
+\label{ch:analisis_funciones_numpy}
+
+\chapterauthor{Ignacio Falcón, Joaquín Parra, Alvaro Osses}
+
+\hfill \textbf{Fecha de la actividad:} 8 de Octubre del 2025
+
+Para este capítulo, se investigó y trabajó con una variedad de funciones pertenecientes a la libreria \textit{Numpy} del lenguaje de Programación Python con el objetivo de evaluar y comprobar las capacidades que pueden brindar a la hora de trabajar en matemáticas. Luego, se analizaron las funciones estudiadas con el objetivo de demostrar su utilidad frente a objetivos concretos.
+
+\section {Funciones de Numpy}
+
+Para esta sección, se tenía como problema:
+
+\textit{Consultar y buscar información acerca de las siguientes funciones de }\lstinline|numpy|, \lstinline|arange, array, linspace,|
+\lstinline |geomspace, ones, zeros, random.random, random.normal, random.randint|, \textit{además, se debe listar cada función según su nombre, definición y ejemplo. }
+
+Para esto, se confeccionó una tabla compuesta por un conjunto de múltiples funciones pertenecientes a la librería \textit{Numpy} junto a su debida explicación, a su vez, se listó ejemplos del uso de cada una de las funciones mencionadas.
+
+\begin{table} 
+    \begin{tabular}{l c c }
+    Función & Explicación & Ejemplos \\ 
+    \hline
+    
+    \parbox[t]{2.5cm}{arange} & \parbox[t]{8cm}{Función que genera un arreglo númerico en un intervalo a saltos, debe indicarse en orden, el inicio y término del intervalo (no lo toma) y el salto entre valores.} & \parbox[t]{4cm}{\lstinline|numpy.arange(0,10,2)|    \lstinline|# array([0. 2. 4. 6. 8.])|} \\ 
+    && \\
+    \parbox[t]{2.5cm}{array} & \parbox[t]{8cm}{Función que convierte una lista específica de datos en un arreglo numérico de Numpy, se le debe indicar dentro del paréntesis la lista a trabajar.} & \parbox[t]{4cm}{\lstinline|numpy.array([1,2,3])|   \lstinline|#array([1. 2. 3.])|} \\ 
+    && \\
+    \parbox[t]{2.5cm}{linspace} & \parbox[t]{8cm}{Función que genera un arreglo en un intervalo para una cantidad de puntos a una distancia igual, se debe indicar en orden donde comienza el intervalo, donde termina el intervalo y la dimensión de datos del arreglo.} & \parbox[t]{4cm}{\lstinline|numpy.linspace(0,10,6)|    \lstinline|#array([0. 2. 4. 6. 8. 10.])|} \\ 
+    && \\
+    \parbox[t]{2.5cm}{geomspace} & \parbox[t]{8cm}{Función que genera un arreglo en un intervalo a una proporción geométrica entre valores, se le debe indicar en orden donde comienza el intervalo, donde termina y la dimensión de datos que tendrá el arreglo. } &\parbox[t]{4cm}{ \lstinline|numpy.geomspace(1,1000,4)|     \lstinline|# array([1. 10. 100. 1000.])|}\\ 
+    && \\
+    \parbox[t]{2.5cm}{ones} & \parbox[t]{8cm}{Función que genera un arreglo de una cantidad específica de coeficientes, los cuales todos son de valor 1, esta cantidad debe ser agregada dentro del paréntesis de la función.} &\parbox[t]{4cm}{\lstinline|numpy.ones(4)|      \lstinline|#array([1. 1. 1. 1.])|} \\ 
+    &&\\
+    \parbox[t]{2.5cm}{zeros} & \parbox[t]{8cm}{Función que genera un arreglo de una cantidad de específica de coeficientes, los cuales son todos de valor 0, esta cantidad debe ser agregada dentro del paréntesis de la función.} & \parbox[t]{4cm}{\lstinline|numpy.zeros(4)|      \lstinline|# array([0. 0. 0. 0.])|}\\ 
+    &&\\ 
+    \parbox[t]{2.5cm}{random.random} & \parbox[t]{8cm}{Función que genera un arreglo de una cantidad específica de valores aleatorios que se encuentran entre 0 y 1, este arreglo puede ser de la dimensión que se escoja.} & \parbox[t]{4cm}{\lstinline|numpy.random.random(4)|     \lstinline|#array([0.12771608, 0.65220371|   \lstinline|# , 0.99625441, 0.90112646])|}\\ 
+    &&\\
+    \parbox[t]{2.5cm}{random.normal} & \parbox[t]{8cm}{Función que genera un arreglo de coeficientes que cumplen una distribución normal en torno a un valor promedio (primer valor), una desviación estándar concreta(Segundo valor) y la dimensión de elementos}& \parbox[t]{4cm}{\lstinline|numpy.random.normal(10,2,5)|   \lstinline|# array([ 8.879 12.321|   \lstinline|# 9.768 11.045  7.533])|}\\ 
+    && \\
+    \parbox[t]{2.5cm}{random.randint} & \parbox[t]{8cm}{Función que genera un arreglo de valores enteros, en un intervalo definido, debe indicarse en orden el inicio del intervalo, el término el intervalo (valor que no toma) y la dimensión (cantidad) de elementos.} & \parbox[t]{4cm}{\lstinline|numpy.random.randint(1,10, 3) |     \lstinline|# array([3. 7. 9.])|} \\ 
+    && \\ \hline \\
+    \end{tabular} 
+    \caption{Tabla de funciones de Numpy como: Nombre - Descripción - Ejemplo.}
+    \label{fig:tabla_funciones_numpy}
+\end{table}
+
+Esta tabla se puede encontrar en el Cuadro (\ref{fig:tabla_funciones_numpy})
+
+\section{Visualización de una distribución normal en un conjunto de 200 datos aleatorios} 
+
+Este problema, consistía en generar una cantidad concreta (mayor a 200) de números aleatorios que cumplan con una distribución normal. Luego, en una misma figura, generar un gráfico de $a_n$ vs $n$ y un histograma de $a_n$. Para esto, se abordó el uso de la función \lstinline!numpy.random.normal! para generar los números en cuestión. Luego, haciendo uso de la libreria \textit{MatplotLib.pyplot}, se generaron dos gráficos, cada uno correspondiente a los valores $(n,a_n)$ y al histograma de ${a_n}$.
+
+\begin{lstlisting}
+dist_normal = np.random.normal(0,0.5,N) # Se generan N cantidad de números aleatorios 
+                                        # según una distribución normal centrada en 0 
+                                        # y con desviación estándar de 0.5
+
+plt.scatter(np.arange(0,201), dist_normal) #Crea el gráfico de puntos en el espacio
+
+plt.hist(dist_normal) # Se genera un histograma
+
+\end{lstlisting}
+
+Esto, al ejecutarse, genera la \autoref{fig:histograma_tarea1}, la que compone al gráfico $a_n$ y al histograma de datos ${a_n}$.
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\textwidth]{../img/analisis_numpy/histograma_tarea1_an.png}
+    \caption{Gráfico e Histograma de datos}
+    \label{fig:histograma_tarea1}
+\end{figure}
+
+\section{Generación de matriz de números complejos e impresión de valores según su posición} 
+
+El problema consistía en definir inicialmente una matriz 3x5 de números complejos, para luego imprimir la primera fila, la última columna y el elemento de la segunda fila y primera columna. 
+
+Para este problema, se generó una matriz concreta haciendo uso de la función array, a la cual se le introdujo 3 listas de 5 valores cada una, todos con números complejos, luego se procedió a imprimir lo requerido. A continuación, el código utilizado.
+
+
+\begin{lstlisting}
+matriz = np.random.random((3,5)) + 1j*np.random.random((3,5)) # Crea una matriz de 3x5 
+                        # con números complejos
+
+
+print(matriz[0]) # Imprime la Primera fila de la matriz
+print(matriz[:,-1]) # Imprime la última columna de la matriz
+print(matriz[1,0]) # Imprime el coeficiente 2x1 de la matriz
+
+\end{lstlisting}
+
+\section{Diferencia entre elementos adyacentes de dos series de datos numéricos} 
+
+Para el tercer problema, se requería generar una serie enésima de números enteros aleatorios, en este caso, considerando hasta $N=10$, luego, se pedía evaluar una nueva serie de diferencias entre elementos adyacentes de la serie generada. Esto debía trabajarse tanto con ciclos \textit{for}, como con operaciones vectoriales de \textit{Numpy}. 
+
+Para esto, se abordó inicialmente haciendo uso de un ciclo for para generar la diferencia entre valores dentro de arreglos generados por una lista $x_i$, luego, se hizo uso de la función \textit{diff} de Numpy, con la cuál se puede encontrar la diferencia de valor entre posiciones seguidas de un arreglo. A continuación se presenta el código usado.
+
+\begin{lstlisting}
+serie = np.random.randint(1,100,n+1) # Crea un array de N+1 números aleatorios enteros 
+                                   # del 1 al 100
+
+diferencia = np.zeros(n) # Generamos un arreglo de N espacios con ceros
+for i in range(0,len(serie) - 1):
+    diferencia[i] = serie[i+1] - serie[i] # Para cada posición del arreglo, evalua 
+    # la diferencia entre el espacio siguiente y el actual. 
+    
+print(serie[1:] - serie[:-1],"Es la serie hecha con la propiedad vectorizada de arrays.") 
+# Imprime la nueva serie usando propiedades vectorizadas
+
+
+\end{lstlisting}
+
+\section{Representación de la función coseno en un gráfico a puntos equidistantes}
+
+Para el último problema, se pedía definir una variable $x$ como un arreglo de 20 elementos en orden creciente en el intervalo $-2\pi \leq x \leq 2\pi $, luego, se requería graficar $\cos x$ en función del arreglo e interpretar su resultado. 
+
+Para esto, se generó una variable x con 20 elementos aleatorios de misma distancia usando la función \textit{linspace}, de Numpy, en un rango entre $[-2\pi,2\pi]$. Luego, haciendo uso de la librería \textit{MatplotLib.pyplot}, se graficó $\cos x$ en función del arreglo x generado anteriormente, como se puede notar en la \autoref{fig:grafico_tarea1_n_vs_an}.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\textwidth]{../img/analisis_numpy/grafico_tarea1_n_vs_an.png}
+    \caption{Gráfico de cos(x) en función del Arreglo X}
+    \label{fig:grafico_tarea1_n_vs_an}
+\end{figure}
+
+
+
+    Es importante señalar que el gráfico no es suave, en concreto, luce del estilo poligonal con una cantidad N de aristas,  esto es debido a que este está generado en base a una cantidad discreta de valores, en donde \lstinline|plot| genera rectas para cada intervalo entre puntos, esto, a diferencia de la función $\cos x$ para un intervalo, como lo sería para $x = [-2\pi,2\pi]$ donde esta, al poseer una cantidad infinita de puntos, es de gráfica suave. 
+
+
+    A continuación, se presenta el código usado.
+\begin{lstlisting}
+plt.figure() # Genera una nueva figura vacía
+
+x = np.linspace(-2*np.pi, 2*np.pi, 20) # Genera un arreglo de 20 valores entre -2pi 
+                                       # y 2pi de forma creciente
+
+plt.plot(x, np.cos(x)) # Grafica la función cos(x) con x el arreglo 
+                          # anteriormente trabajado
+
+plt.ylabel(r'Valor de $\cos(x)$')
+plt.xlabel(r'Valor de x')
+
+plt.show()
+\end{lstlisting}
+
+\section*{Conclusiones}
+
+Para el presente caítulo, se puede concluir el aprendizaje obtenido a través del análisis de funciones en Numpy, una útil librería de \lstinline|Python| que permite realizar diferentes acciones matématicas, principalmente a través del uso de \textit{Arrays} o Arreglos de números.
+
+Gracias a esta librería, a su vez, se pueden destacar una variedad de funciones, como se muestra para la primera sección de este capítulo, donde se abordaron funciones elementales como \lstinline|numpy.linspace| o \lstinline|numpy.random.normal|.
+
+A su vez, se usaron las funciones analizadas en una serie de contextos a modo de problema para las posteriores secciones, donde se evaluaron respectivos usos, tales como la generación de números y aplicaciones en productos de diferente índole, y posibles limitaciones que presentan estos objetos a la hora de trabajar con arreglos de tipo numérico (para contextos de números reales o complejos), de esta forma, se pudo comprender de mejor manera los usos posibles y aplicaciones que tienen estas en el contexto de estudio para la asignatura o próximos proyectos.
+
+Debido a esto, se espera que para próximos capítulos, se puedan utilizar las propiedad pertenecientes a las funciones analizadas con mayor profundidad en el ámbito del cálculo numérico.
+
+\section*{Agradecimientos}
+Para este capítulo, se requirió ayuda de múltiples fuentes de documentación, especialmente para la librería de \lstinline|Numpy|, por lo cual se agradece la propia documentación que está posee.
+Notar la mayoritaria creación del capítulo por Ignacio Falcón, además, notar el trabajo de Alvaro Osses en consejos y correcciones para el código de los problemas y a Joaquín Parra a la hora de desarrollar la tabla inicial, especialmente debido a los múltiples errores que se obtenían al momento de proceder a compilar el documento en cuestión.
+
+Finalmente, se agradece al Dr. Roberto Navarro por las correcciones hechas para este capítulo, las cuales se analizaron en búsqueda de la mejor solución posible.
+\end{document}

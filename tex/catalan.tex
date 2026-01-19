@@ -1,0 +1,178 @@
+\documentclass[../portafolio.tex]{subfiles}
+
+\begin{document}
+
+
+\chapter{Números de Catalán}
+\label{ch:catalán}
+
+\chapterauthor{Joaquín Parra, Ignacio Falcón, Alvaro Osses}
+
+\hfill \textbf{Fecha de la actividad:} 8 de Octubre de 2025
+ \vspace{10mm}
+
+
+En este capítulo vamos a familiarizarnos a calcular los primeros números de Catalán mediante el uso de distintas herramientas de \lstinline!python! con el fin de observar la precisión de los distintos métodos. También, exploraremos otras formas de expresar esta secuencia de números y aproximaciones útiles de estos. Los códigos tanto de funciones como de gráficos pueden encontrarse en \$src/catalan. 
+ \section{Cómputo y Precisión}
+El $n$-ésimo número de Catalán, para $n \in \mathbb{N}_{0}$ se define como: 
+\begin{equation}
+  C_n = \frac{(2n)!}{(n+1)! \cdot n!}. \label{cat}
+\end{equation}
+Para trabajar con los números de Catalán, se definieron dos funciones 
+factoriales: una con comandos nativos de \lstinline!python! y otra con \lstinline!numpy!, la cual
+permite ajustar la precisión de los números de forma manual. En base a esto, podemos definir otras 2 funciones que nos retornen los números de Catalán:
+
+\begin{lstlisting}
+def catalan(N):
+    lista = []
+    q = factorial(2*(N+1)) 
+    for i in range(N+1):
+        lista.append(q[2*i] / (q[i+1] * q[i]))
+    return lista
+\end{lstlisting}
+
+\begin{lstlisting}
+def catalan_numpy(N, dtype=np.int64):
+    q = factorial_numpy(2*N, dtype=dtype)
+    return q[::2] / ( q[1:N+2] * q[:N+1] )
+\end{lstlisting}
+
+\begin{table}
+  \centering
+  \begin{tabular}{  | c | c | c | c | c | c |  }
+    \hline  \lstinline!N! & Nativo &  \lstinline!np.int12! &  \lstinline!np.int32! &  \lstinline!np.int64! & \lstinline!np.float128! \\ \hline 
+    0  &   1  & 1 & 1 & 1 & 1 \\ \hline   
+    1  &   1  & 1 & 1 & 1 & 1 \\ \hline
+    2  &   2  & 2  & 2 & 2 & 2 \\ \hline
+    3  &   5  & 5 &  5 & 5 & 5 \\ \hline
+    4  &   14 & -8.75555556 & 14 & 14 & 14 \\ \hline
+    5 & 42 & 1.16564417 &  42 & 42 & 42 \\ \hline
+    6  &   132 & -0.04210526 & 132 & 132 & 132 \\ \hline
+    7  &  429   & -0.71428571 & 6.2936256 & 429 & 429 \\ \hline
+    8 & 1430 & -2 & 1.14759881 & 1430 & 1430 \\ \hline
+    9 & 4862 &  0 & 0.51752581 & 4862 & 4862 \\ \hline
+    10 & 16796 & \lstinline!nan! & 1.05997819 & 16796 & 16796 \\ \hline
+    11 & 58786 & \lstinline!nan! & -2.45869297 & -65.41040340 & 58786 \\ \hline
+    12 & 208012 & \lstinline!nan! & 0.64969271 & -2.62683037 & 208012   \\ \hline
+    13 & 742900 & \lstinline!nan! & -1.10638298 & -0.198536786 & 742900 \\ \hline
+    14 & 2674440 & \lstinline!nan! & 4.49315068 & 97.0002887 & 2674440\\ \hline
+  \end{tabular}
+  \caption{Primeros 15 números de Catalán a distinta precisión.} 
+  \label{tab:cat}
+\end{table}
+
+El cuadro \ref{tab:cat} muestra los primeros 15 números de Catalán. La notación lleva un \lstinline![N]! pues recordemos que las funciones nos devuelven listas/arreglos, y extraemos el 
+N-ésimo elemento que se corresponde con el N+1-ésimo número de Catalán. Por conveniencia, se ha decidido trabajar la función \lstinline!catalan_numpy! con alta precisión de
+\lstinline!np.float128! para realizar una comparación en igualdad de condiciones cuando N comienza a crecer. \\
+Gracias a la alta precisión escogida, podemos ver que para los primeros N=15 números de Catalán, ambas funciones se comportan bien: obtenemos los mismos resultados. Sin embargo, existen discrepancias importantes cuando variamos el parámetro \lstinline!dtype!.
+La figura \ref{fig:dtype} muestra los retornos de la función 
+\lstinline!catalan_numpy! cuando ajustamos la precisión a \lstinline!np.int16!,  
+\lstinline!np.int32! y \lstinline!np.int64!.
+
+\begin{figure}
+  \centering
+  \includegraphics[scale=0.5]{catalan/dtype.pdf}   \caption{\lstinline!catalan_numpy(N)! a distintas precisiones}
+  \label{fig:dtype}
+\end{figure}
+
+Notamos que hasta N=4 no se aprecian anomalías. Después observamos discrepancias en N=5, N=7 y N=11 para las precisiones de (\lstinline!np.int!) 16, 32 y 64 bits, respectivamente, y si observamos el código, vemos que se produce un Overflow. La explicación de este comportamiento errático está en como 
+se relaciona la precisión utilizada con la definición de los números de Catalán.
+Recordemos que cuando ajustamos la precisión a entero de 16 bits, podemos almacenar a lo más el entero positivo $2^{15}-1=32767$ (un bit se guarda para el signo). Para cuando calculamos el quinto número de Catalán, \lstinline!catalan_numpy(4)! debe calcular el factorial $(2\cdot 4)!=40320$, sobrepasando el límite impuesto por la precisión, generando un Overflow. Esto también explica la desaparición de algunos datos (retorna \lstinline!nan! o valores errados). Mismo argumento se aplica para las precisiones de 32 y 64 bits, y nos permite comparar de forma segura con precisión de 128 bits, pues en N=15 seguimos en un régimen ordenes de magnitud menor a $2^{127}-1.$
+
+\section{Relación de recurrencia para los números de Catalán }
+ Los números de Catalán también pueden ser expresados con la siguiente relación
+ de recurrencia:
+ \begin{equation}
+   C_0 =1, \qquad C_{n+1} = \frac{4n+2}{n+2}C_n \label{cat2}.
+ \end{equation}
+ En efecto,
+ sea $C_0=1$, luego usando la definición original \eqref{cat}:
+ \begin{align*}
+     \frac{C_{n+1}}{C_n} &= \frac{(2n+2)! \cdot n!}{(n+2)! \cdot (2n)!} \\
+                       &= \frac{(2n+2)(2n+1)(2n)!\cdot n!}{(n+2)(n+1)n!\cdot (2n)!}\\
+                       &= \frac{4n+2}{n+2},
+\end{align*}
+despejando el cociente entre $C_{n+1}$ y $C_n$ llegamos a la expresión \eqref{cat2}:
+$$
+C_{n+1} = \frac{4n+2}{n+2}C_n.
+$$
+¿Cómo se comporta esta expresión alternativa cuando $n$ crece y \lstinline!dtype! cambia? ¿Existen diferencias con las definiciones anteriores? Primero definimos esta nueva expresión en \lstinline!python! para realizar las comparaciones:
+
+\begin{lstlisting}
+ def cat_rec(N, dtype=np.int32):  
+     C = np.zeros(N+1, dtype=dtype) 
+     C[0] = 1.0
+     for i in range(N)
+         C[i+1] = (4*i +2) / (i+2) * C[i] 
+     return C                           
+                                          
+
+\end{lstlisting}
+
+\begin{table}
+  \centering
+  \begin{tabular}{| c | c | c | c | c | } \hline
+    N & \lstinline!catalan_numpy(N)[N](32)! & \lstinline!cat_rec(N)[N](32)! & 
+    \lstinline!catalan_numpy(N)[N](16)! & \lstinline!cat_rec(N)[N](16)! \\ \hline
+    0 & 1. & 1 & 1. & 1 \\ \hline
+    1 & 1. & 1 & 1. & 1 \\ \hline
+    2 & 2. & 2 & 2. & 2\\ \hline
+    3 & 5. & 5 & 5. & 5\\ \hline
+    4 & 14. & 14 & -8.75555556 & 14\\ \hline
+    5 & 42. & 42 & 1.16564417 & 42\\ \hline
+    6 & 132. & 132 & -0.04210526 & 132\\ \hline
+    7 & 6.2936256 & 429 & -0.71428571 & 429\\ \hline
+    8 & 1.14759881 & 1430 & -2. & 1430 \\ \hline
+    9 & 0.51752581 & 4862 & -0 & 4862\\ \hline \
+    10 & 1.05997819 & 16796 & \lstinline!nan! & 16796\\ \hline
+    11 & -2.45869297 & 58786 & \lstinline!nan! & Overflow\\ \hline
+    12 & 0.64969271 & 208012 & \lstinline!nan! & Overflow\\ \hline
+    13 & -1.10638298 & 742900 & \lstinline!nan! & Overflow\\ \hline
+    14 & 4.49315068 & 2674440 & \lstinline!nan! & Overflow\\ \hline
+  \end{tabular}
+  \caption{\lstinline!catalan_numpy! vs \lstinline!cat_rec! en cálculo de los 
+  primeros 15 números de Catalán a precisión de (\lstinline!np.int!) 16 y 32 bits.}
+  \label{tab:catvrec}
+\end{table}
+Con la función ya definida, podemos hacer las comparaciones. El cuadro 
+\ref{tab:catvrec} muestra los resultados obtenidos al calcular los primeros 15 números de Catalán utilizando con las funciones mencionadas y variando sus precisiones. Tomando de referencia el cuadro \ref{tab:cat}, vemos que la función \lstinline!catalan_numpy! (a la cual se comenzará a referir como
+\textbf{original}) comienza a fallar para N=7 a precisión entero de 32 bits. Esto es debido a que internamente la función original utiliza la ecuación \eqref{cat}
+  para determinar los números de Catalán, y para N=7 debe calcularse $(2\cdot7)!=14!$.
+  Este número excede el máximo de la precisión de un entero de 32 bits $(2^{31}-1)$, lo que produce un Overflow y los números comienzan a cambiar de signo, o ya no 
+  representan un número de la secuencia. En cambio, la función 
+  \lstinline!cat_rec! (a la cual se referirá como \textbf{recurrencia}) funciona sin ningún
+  problema, dada su definición sencilla sin factoriales, es mucho más fácil 
+  de computar y no excedemos el límite de la precisión de un entero a 32 bits. \\ 
+  A precisión entero de 16 bits, ambas funciones experimentan un Overflow, con la diferencia que 
+  la función de recurrencia no comienza a correr desde N=11 en adelante, pues \lstinline!python! identifica de antemano que se excederá el límite de la precisión de 16 bits. Para N<11, la función de recurrencia funciona sin ningún
+  problema, mientras que la función original deja de entregar números de la 
+secuencia para N>4, pues internamente se calcula $8!>2^{15}-1$ y entramos en Overflow, solo que el código sigue corriendo, lo que resulta en los valores
+incorrectos y los \lstinline!nan! (not a number, posiblemente generado por forzar a que el número sea un entero). 
+\newpage
+
+\section{Aproximación}
+Existe una relación que permite estimar en $n$-ésimo número de Catalán (al menos
+para $0<n\leq 15$), la cual es:
+\begin{equation}
+  C_n \approx  \frac{4^n}{n^{3/2}\sqrt{\pi}}\label{eq:aprox}.
+\end{equation}
+Si bien de primeras puede parecer muy rebuscada, obtenemos muy buenas aproximaciones
+en el rango de valores mencionado: la figura \ref{fig:Cn} muestra que esta 
+relación aproxima bastante bien el comportamiento y el valor de los números de 
+Catalán a medida que $n$ crece. Dado que el cálculo de números de Catalán se vuelve más 
+pesado de computar rápidamente cuando avanzamos en la secuencia, para estudios del comportamiento de esta puede ser muy 
+útil una aproximación que no sea tan pesada de calcular. 
+
+\begin{figure}
+  \centering
+  \includegraphics[scale=0.6]{catalan/Cn.pdf}   \caption{Comparación entre la aproximación y los primeros 16 ($C_{15}$) números de Catalán.}
+  \label{fig:Cn}
+\end{figure}
+
+\section*{Conclusiones}
+ Hemos presentado los números de Catalán y hemos evidenciado las dificultades computacionales de trabajar con ellos. Hemos estudiado formas alternativas y más eficientes de trabajar con ellos, para finalmente conocer una aproximación útil y liviana para el computador. Durante este capítulo, se familiarizó un concepto ajeno a la física y se presentó de forma interactiva, explicando paso a paso todo el procedimiento para lograr un acercamiento efectivo. Si bien de momento no hemos estudiado una aplicación directa en nuestra área de estudio, siempre es bueno expandir conocimientos y realizar trabajos en áreas afines para mejorar nuestras habilidades, en este caso, de programación.
+
+ \section*{Agradecimientos}
+Este capítulo fue escrito principalmente por Joaquín Parra, con revisiones tanto de código como de contenido de parte de sus compañeros de trabajo Alvaro Osses e Ignacio Falcón, quienes también ayudaron a demostrar la relación de recurrencia descrita. Es necesario también agradecer al docente responsable del curso, Dr. Roberto Navarro, pues sus clases sirvieron de apoyo para este trabajo.
+
+\end{document}

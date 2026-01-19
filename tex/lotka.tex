@@ -1,0 +1,396 @@
+\documentclass[../portafolio.tex]{subfiles}
+
+\begin{document}
+
+
+\chapter{Ecuaciones de Lotka-Volterra: análisis de la dinámica cazador-presa}
+\label{ch:lotka}
+
+\chapterauthor{Joaquín Parra, Ignacio Falcón, Alvaro Osses}
+
+\hfill \textbf{Fecha de la actividad:} 7 de Octubre de 2025
+ \vspace{10mm}
+ 
+El \textbf{modelo depredador-presa de Lotka-Volterra} representa una interacción entre dos especies cuando una de ellas (el depredador) se alimenta de la segunda (la presa). Si llamamos $D(t)$ a la función que modela la densidad de depredadores y $P(t)$ a la que modela la densidad de presas, entonces el modelo establece que estas funciones se relacionan según el sistema de ecuaciones diferenciales no lineales:
+\begin{equation}
+\begin{aligned}
+  P'(t) &= \alpha P - \beta PD, \\ \label{eq:lotka}
+ D'(t) &= -\gamma D + \delta PD, \\
+  P(0) &= P_0, \\
+  D(0) &= D_0. 
+\end{aligned}
+\end{equation}
+Donde $\alpha, \beta, \gamma, \delta$ son constantes positivas que regulan las tasas de crecimiento, mortalidad e interacción del sistema.\\
+Dada la no linealidad de las ecuaciones, obtener soluciones explicitas puede ser difícil, por lo que abordaremos este modelo mediante el uso de código en \lstinline!python!. 
+
+\section{Reducción de variables}
+Consideremos el siguiente precedente:
+\begin{teorema}[Teorema $\Pi$ de Buckingham]
+  Sean $q_1, q_2, \dots , q_n$ $n$ variables involucradas en un problema particular, tal que exista una relación funcional de la forma: $$f(q_1, q_2, \dots , q_n) = 0,$$ entonces las $n$ variables siempre se pueden combinar en productos para formar exactamente ($n-r$) variables independientes adimensionales, donde $r$ es el rango de la matriz dimensional (matriz donde cada columna representa una variable y cada fila una dimensión). Cada parámetro adimensional es llamado $\Pi_i$, y la relación funcional puede ser reescrita como: 
+  $$ \phi(\Pi_1, \Pi_2, \dots, \Pi_{n-r})=0. $$
+   Los $\Pi_i$ no son únicos, y se construyen fijando $n-r$ variables con distintas dimensiones, formando una base adimensional o $\Pi$ grupo. También se puede construir una nueva base $\Pi_i'$ a partir de una productos de una base $\Pi_i$ 
+  \citep{FLUIDS:2008}.
+\end{teorema}
+
+Haciendo uso del teorema $\Pi$ reduciremos el número de variables de nuestro sistema. Analizando las ecuaciones \eqref{eq:lotka}, identificamos 3 dimensiones: la densidad de presas [P], la densidad de depredadores [D] y el tiempo [T].  Puesto que las dimensiones a ambos lados de la ecuación deben ser las mismas, las dimensiones de $\alpha, \beta, \gamma$ y $\delta$ se deducen rápido y se exponen en la tabla \ref{tab:dim}. 
+\begin{table}
+\begin{center}
+\begin{tabular}{c|ccccccccc}
+  Dimensión & $P$ & $D$ & $t$ & $\alpha$ & $\beta$ & $\delta$ & $\gamma$ & $P_0$ & $D_0$ \\
+\hline
+  $[P]$ & 1 & 0 & 0 & 0 & 0 & -1 & 0 & 1 & 0 \\
+  $[D]$ & 0 & 1 & 0 & 0 & -1 & 0 & 0 & 0 & 1\\
+  $[T]$ & 0 & 0 & 1 & -1 & -1 & -1 & -1 & 0 & 0 \\
+\end{tabular}
+  \caption{Exponentes de las dimensiones de cada variable del problema.}
+  \label{tab:dim}
+\end{center}
+\end{table}
+
+
+%\begin{equation}
+% \begin{array}{c|ccccccc}
+% \text{Dimensión} & P & D & t & \alpha & \beta & \delta & \gamma \\
+%  \hline
+%  \text{[P]} & 1 & 0 & 0 & 0 & 0 & -1 & 0 \\
+%  \text{[D]} & 0 & 1 & 0 & 0 & -1 & 0 & 0 \\ \label{tab:dim}
+%  \text{[T]} & 0 & 0 & 1 & -1 & -1 & -1 & -1 \\
+% \end{array}
+%\end{equation}
+ 
+Vemos que se corresponde con una matriz de tamaño $3\times 9$, por lo que la matriz dimensional debe ser a lo más de rango 3. En efecto, identificamos la submatriz principal: 
+$$ A[\left\{ P,D,t \right\}] = \begin{pmatrix}
+ 1 & 0 & 0 \\
+ 0 & 1 & 0 \\
+ 0 & 0 & 1
+\end{pmatrix}$$
+  
+con det$(A[\left\{ P,D,t \right\}]) = 1$, y así la matriz dimensional es de rango 3, por lo que el teorema $\Pi$ asegura que podemos reducir el problema a $9-3=6$ variables adimensionales.  En particular, utilizaremos la base adimensional dada por las constantes del problema: 
+  \begin{equation*}
+   \begin{array}{cccc}
+     \tau = \alpha t,  &  p  = \frac{\delta}{\gamma}P,  &  d = \frac{\beta}{\alpha}D, & \mu =\frac{\gamma}{\alpha}, \\
+     &  p_0 = \frac{\delta}{\gamma}P_0,   & d_0 =  \frac{\beta}{\alpha}D_0. &
+   \end{array}
+  \end{equation*}
+Esta selección particular resulta conveniente pues las densidades de población $P,D$ se normalizan con los parámetros que rigen la dinámica del sistema: la tasa de crecimiento de presas $\alpha$, la tasa de mortalidad de los depredadores $\gamma$ y los parámetros $\beta$, $\delta$ asociados a la efectividad de los depredadores en los encuentros con las presas \citep{mira}. El tiempo $t$ se normaliza con la tasa de crecimiento de las presas $\alpha$ y además se tiene el parámetro $\mu$ que es el cociente entre las tasas de mortandad/crecimiento de depredadores y presas respectivamente, lo cual ofrece un parámetro de control al sistema. Estas elecciones permiten reescribir el sistema  \eqref{eq:lotka} en función de las nuevas variables $\left\{ \tau, p, d, \mu, p_0, d_0  \right\}$ como el sistema de ecuaciones diferenciales \eqref{eq:lotka_nonorm}. 
+  
+  \begin{equation}
+    \label{eq:lotka_nonorm}
+       \begin{aligned}
+       \alpha \frac{\gamma}{\delta} p'(\tau) &= \alpha \frac{\gamma}{\delta}p - \beta \frac{\gamma}{\delta} \frac{\alpha}{\beta}pd, \\
+       \alpha \frac{\alpha}{\beta}d'(\tau) &= -\gamma \frac{\alpha}{\beta}d + \delta \frac{\gamma}{\delta} \frac{\alpha}{\beta}pd, \\
+       \frac{\gamma}{\delta} p(0) &= \frac{\gamma}{\delta} p_0, \\
+   \frac{\alpha}{\beta}d(0) &= \frac{\alpha}{\beta}  d_0.
+     \end{aligned}
+    \end{equation}
+
+ Donde se ha hecho uso de $(d/dt) = (d/d\tau) \cdot (d\tau / dt) = \alpha (d/d\tau)$. Es fácil ver que podemos simplificar el sistema al dividir por algunos parámetros a ambos lados e identificar elementos de la base adimensional, obteniendo así el sistema de ecuaciones diferenciales \eqref{eq:lotka_norm}, donde los únicos parámetros libres son $\mu, p_0$ y $d_0$. 
+
+\begin{equation}
+  \label{eq:lotka_norm}
+     \begin{aligned}
+    p'(\tau) &=  p(1-d), \\
+    d'(\tau) &= d\mu (p-1),\\
+     p(0) &= p_0, \\
+     d(0) &= d_0.
+   \end{aligned} 
+  \end{equation}
+
+La elección de la base adimensional $\left\{ \tau, p , d, \mu, p_0, d_0 \right\}$ permite que la dinámica de sistemas escalados\footnote{Aquellos sistemas en los que los parámetros libres se relacionan mediante una transformación lineal dada por una constante fija.} que tengan la misma tasa de depredación $\beta$ y tasa de eficiencia de depredadores $\delta$ quede representada por el sistema \eqref{eq:lotka_norm}. Basta con escoger un sistema con parámetros libres arbitrarios (escalados), por ejemplo, $\left\{ 2\alpha, 2\gamma, 2P_0, 2D_0 \right\}$ y notar que $\tau = 2\alpha t$, $d = \beta / (2\alpha)D $, $p = \delta / (2\gamma)P$ y $\mu = (2\gamma) / (2\alpha)$. Luego, al replantear el sistema \eqref{eq:lotka} tenemos el sistema \eqref{eq:lotka_nonorm2}. 
+
+\begin{equation}
+\label{eq:lotka_nonorm2}
+\begin{aligned}
+    2\alpha \frac{2\gamma}{\delta} p'(\tau) &= 2\alpha \frac{2\gamma}{\delta} p -
+    \beta \frac{2\gamma}{\delta} \frac{2\alpha}{\beta} p d, \\
+    2\alpha \frac{2\alpha}{\beta} d'(\tau) &= -2\gamma \frac{2\alpha}{\beta} d +
+    \delta \frac{2\gamma}{\delta} \frac{2\alpha}{\beta} p d, \\
+    \frac{2\gamma}{\delta} p(0) &= \frac{2\gamma}{\delta} p_0, \\
+   \frac{2\alpha}{\beta}d(0) &= \frac{2\alpha}{\beta}  d_0.
+\end{aligned}
+\end{equation}
+
+Donde se ha utilizado el hecho que $(d/dt) = (d/d\tau) \cdot (d\tau / dt) = 2\alpha (d/ d\tau)$. Al simplificar a ambos lados, vemos que recuperamos las ecuaciones \eqref{eq:lotka_norm}, por lo que en efecto, la dinámica de sistemas escalados en los que se fija los parámetros asociados a la efectividad de los depredadores en los encuentros ($\beta, \delta$) queda determinada por el sistema \eqref{eq:lotka_norm}.
+
+\section{Implementación del método leap-frog para obtener soluciones numéricas}
+
+El \textbf{método del salto de la rana o leap-frog} es un método numérico para resolver sistemas de ecuaciones diferenciales, usualmente en mecánica. Una aplicación clásica es determinar las ecuaciones de movimiento de un cuerpo acelerado, que se obtiene de resolver el sistema de ecuaciones diferenciales \eqref{eq:ode_system}.
+\begin{equation}
+  \begin{aligned}
+  \begin{pmatrix}
+    \dot{x} \\ \label{eq:ode_system}
+    \dot{\upsilon}
+  \end{pmatrix}
+    &= 
+  \begin{pmatrix}
+   \upsilon \\
+    a
+  \end{pmatrix}, \\
+    x(0)&=x_0, \\
+    \upsilon(0)&=\upsilon_0.
+  \end{aligned}
+\end{equation}
+
+Donde $x=x(t)$, $\upsilon = \upsilon(t)$ y $a=a(t)$. El método consiste en utilizar un esquema como el \eqref{eq:leap-frog} en el que destaca el uso de ``pasos 
+intermedios'' para resolver numéricamente el sistema (nosotros lo implementaremos en \lstinline!python!). 
+
+\begin{equation}
+ \begin{aligned}
+   \label{eq:leap-frog}
+   \upsilon(t+h/2) &= v(t) + \frac{h}{2}a(t), \\
+   x(t+h) &= x(t) + h\upsilon(t+h/2), \\
+   \upsilon(t+h) &= \upsilon(t+h/2) + \frac{h}{2}a(t+h).
+ \end{aligned}
+\end{equation}
+
+Las ecuaciones no admiten el método de forma directa: al momento de plantear el esquema, nos encontramos con:
+\begin{equation}
+ \begin{aligned}
+   d(\tau + h/2) &= d(\tau) + \frac{h}{2}d'(\tau), \\
+   p(\tau + h) &= p(\tau) + hp'(\tau + h/2), \\
+   d(\tau +h) &= d(\tau +h/2) + \frac{h}{2}d'(t+h).
+ \end{aligned}
+\end{equation}
+Bajo la consideración que al implementar este método en \lstinline!python!, surge un problema a primera vista: al ser pasos discretos, no se pueden determinar los pasos intermedios a menos que se tenga una fórmula con argumentos enteros. Para nuestro caso, no poseemos una fórmula para los términos $p'(\tau + h/2)$ que contienen a $p(\tau + h/2)$, por lo que no podemos aplicar de manera directa el método leap-frog.\\
+En cambio, realizaremos el siguiente cambio de variables:
+\begin{equation*}
+ \begin{array}{cccc}
+  x = \ln p, & y = \ln d,
+ \end{array}
+\end{equation*}
+Con lo que nuestro modelo Lotka-Volterra adimensional adopta la forma del sistema \eqref{eq:almost}.
+\begin{equation}
+  \begin{aligned}
+    \label{eq:almost}
+    x'(\tau) &= \frac{p'}{p}, \\
+    y'(\tau) &= \frac{d'}{d}, \\
+    x(0) &= \ln p_0, \\
+    y(0) &= \ln d_0.
+  \end{aligned}
+\end{equation}
+Donde reemplazando los términos $p,d,p',d'$ obtenemos el sistema \eqref{eq:new_var}.
+\begin{equation}
+ \label{eq:new_var}
+  \begin{aligned}
+   x'(\tau) &= 1-e^y, \\
+   y'(\tau) &= \mu(e^x-1), \\
+    x(0)&=\ln p_0, \\
+    y(0) &= \ln d_0.
+  \end{aligned}
+\end{equation} 
+Bajo este planteamiento, podemos aplicar un esquema de salto de rana. Notemos que podemos calcular el paso medio mediante una derivada centrada, como se muestra en las ecuaciones \eqref{eq:frog1}.
+\begin{equation}
+  \label{eq:frog1}
+  \begin{aligned}
+    y'(\tau) &= \frac{y(\tau +h/2) - y(\tau - h/2)}{h} + \mathcal{O}(h^2), \\
+    y(\tau + h/2) &= y(\tau - h/2) + hy'(\tau) + \mathcal{O}(h^3), \\
+    y(\tau + h/2) &= y(\tau) + \frac{h}{2}y'(\tau) + \mathcal{O}(h^3).
+  \end{aligned}
+  \end{equation}
+  Donde se ha utilizado la aproximación $y(t) \approx y(t-h/2) + (h/2)y'(t)$ dada por el método de Euler. Luego, podemos calcular el paso entero de $x$ con una derivada centrada, como se muestra en las ecuaciones \eqref{eq:frog2}.
+  \begin{equation}
+    \label{eq:frog2}
+   \begin{aligned}
+     x'(\tau + h/2) &= \frac{x(\tau + h) - x(\tau)}{2\cdot h/2} + \mathcal{O}(h^2), \\
+     x(\tau + h) &= x(\tau) + hx'(\tau + h/2) + \mathcal{O}(h^3).
+   \end{aligned}
+  \end{equation}
+  Y del método de Euler, podemos aproximar el siguiente paso entero de $y$ como en la ecuación \eqref{eq:frog3}.
+  \begin{equation}
+   \label{eq:frog3}
+  \begin{aligned}
+    y(\tau +h) = y(\tau + h/2) + \frac{h}{2}y'(\tau + h/2).
+  \end{aligned}
+  \end{equation}
+Con lo que tenemos listo el esquema de salto de rana. Utilizando las relaciones descritas en \eqref{eq:new_var}, el esquema de salto de rana que utilizaremos en nuestro código es el sistema \eqref{eq:frog-leap}.
+  \begin{equation}
+    \label{eq:frog-leap}
+  \begin{aligned}
+    y(\tau + h/2) &= y(\tau) + \frac{h}{2}\mu(1-e^{x(\tau)}), \\
+    x(\tau + h) &= x(\tau) + h(e^{y(\tau + h/2)}-1), \\
+    y(\tau +h) &= y(\tau + h/2) + \frac{h}{2}\mu(1- e^{x(\tau + h)}).
+  \end{aligned}
+  \end{equation}
+
+Con estas ecuaciones, y el siguiente código:
+\begin{lstlisting}
+def _condiciones_iniciales(t, x0, y0):
+    x0 = np.asarray(x0)
+    y0 = np.asarray(y0)
+    x = np.zeros((len(t),) + x0.shape)
+    y= np.zeros((len(t),) + y0.shape)
+    x[0] = x0
+    y[0] = y0
+    return x,y
+
+def dy(a):
+    return (np.exp(a)-1)
+
+def leapfrog(dy, x0, y0, t, mu): 
+    dt = np.diff(t)
+    x, y = _condiciones_iniciales(t, x0, y0)
+    dy0 = dy(x0) 
+    for n in range(t.size-1):
+        ymedio = y[n] + 0.5 * mu * dt[n] * dy0
+        x[n+1] = x[n] + dt[n]*(1- np.exp(ymedio) )
+        dy0 = dy(x[n+1])
+        y[n+1] = ymedio + 0.5 * mu * dt[n] * dy0
+    return  np.exp(x), np.exp(y)
+\end{lstlisting}
+
+\begin{figure}
+ \centering 
+  \includegraphics[scale=0.42]{lotka/lotka_solutions.pdf}   \caption{Soluciones numéricas al sistema adimensional de Lotka-Volterra a distintos $\mu$, con $p_0=1, d_0=5$.}
+  \label{fig:solutions}
+\end{figure}
+podemos obtener la figura \ref{fig:solutions}. En ella, observamos como varía la dinámica del sistema al cambiar el parámetro de control $\mu= \gamma / \alpha$ (el cociente entre las tasas de mortandad y nacimiento de depredadores/presas). Vemos que en los 3 casos, los resultados son acordes a la interpretación de $\mu$ como parámetro de control: cuando es menor a 1, es decir, $\alpha > \gamma$ (nacen más presas de lo que mueren depredadores) tenemos que la densidad de presas supera a la de depredadores al correr el tiempo, y se cumplen pocos ciclos en un determinado período de tiempo. Cuando $\mu = 1$, tenemos un equilibrio entre el nacimiento de presas y la muerte de depredadores, y ambas poblaciones alcanzan el mismo máximo de densidad. Aumenta la cantidad de ciclos en el período de tiempo. Finalmente, con $\mu=5$, la tasa de mortandad de depredadores es mayor a la tasa de nacimiento de las presas, lo que provoca la gran frecuencia de oscilaciones (ciclos más cortos) pues los ciclos se deben completar en el tiempo de vida de los depredadores, y la amplitud de las oscilaciones de la densidad de depredadores supera a la de las presas. En ningún gráfico la densidad de depredadores sobrepasa las 5 unidades. Esto se analizará más adelante.
+
+
+
+
+
+\section{Determinación de una invariante y análisis de estabilidad}
+
+Es conveniente 
+identificar invariantes del sistema (magnitudes constantes en el tiempo) y analizar su comportamiento en el espacio de fases del mismo. Generalmente, esta invariante suele ser la energía mecánica del sistema. Sin embargo, no estamos trabajando en un contexto mecánico: estamos analizando la dinámica de poblaciones, por lo que algún ajuste deberá ser hecho para sostener este análisis. \\
+El sistema entrega soluciones estables en el tiempo, periódicas, lo que puede ser indicio de la existencia de una invariante en el tiempo.
+En mecánica, el Hamiltoniano $H$ de un sistema actúa como una función potencial en el espacio de fases\footnote{Comentario del Dr. Juan Crisóstomo.} si este no depende explícitamente del tiempo, y si se aplica a soluciones, deberíamos esperar ver trayectorias cerradas donde $H=cte.$
+
+Primero debemos chequear primero si el sistema de ecuaciones diferenciales respeta una estructura coherente con las ecuaciones de Hamilton \citep{leap}. Nótese que solamente hablamos de estructura: en la medida que esto se cumpla, podremos utilizar el método sin preocuparnos si trabajamos en un problema de mecánica o no. Nuestro sistema consta solo de 2 ecuaciones, con lo que las ecuaciones de Hamilton adoptan la forma del sistema \eqref{eq:hamilton} \citep{Goldstein}.
+
+\begin{equation}
+  \label{eq:hamilton}
+  \begin{aligned}
+    p' &= \frac{\partial H}{\partial d}, \\ d' &= -\frac{\partial H}{\partial p}.
+ \end{aligned}
+\end{equation}
+ 
+Donde $H=H(p,d)$ es el Hamiltoniano del sistema, que es una función a determinar. Podemos notar que el sistema Lotka-Volterra adimensional tal y como estaba planteado en \eqref{eq:lotka_norm} no admite la existencia de un Hamiltoniano: basta con tomar las derivadas cruzadas y observar que:
+
+\begin{equation*}
+ \begin{aligned}
+  \frac{\partial^2 H}{\partial p \partial d} &= 1-d, \\
+   \frac{\partial^2 H}{\partial d \partial p} &= -\mu d.
+ \end{aligned}
+\end{equation*}
+
+Y dado que por teorema de Schwarz \citep{Stewart} las derivadas mixtas deben ser iguales, el sistema no admite un Hamiltoniano (al menos no de forma directa). \\
+Sin embargo, nos damos cuenta que bajo el cambio de variables \eqref{eq:new_var}, el sistema admite un Hamiltoniano,
+pues satisface el teorema de Schwarz:
+\begin{equation*}
+ \frac{\partial^2 H}{\partial x \partial y} = \frac{\partial^2 H}{\partial y \partial x} = 0.
+\end{equation*}
+En efecto, de las ecuaciones \eqref{eq:hamilton} deducimos que:
+\begin{equation}
+  \begin{aligned}
+    H(x,y) &= \int x' \; dy + C(x), \\
+    C(x) &= -\int y' \; dx + C. 
+  \end{aligned}
+\end{equation}
+Desarrollando, obtenemos:
+\begin{equation}
+  \begin{aligned}
+    H(x,y) &= y - e^y + C(x), \\
+    C(x) & = \mu (x-e^x) + C,
+  \end{aligned}
+\end{equation}
+lo que define al Hamiltoniano del sistema como la ecuación \eqref{eq:sys_ham}:
+\begin{equation}
+  \label{eq:sys_ham}
+  H(x,y) = y - e^y + \mu (x-e^x),
+\end{equation}
+o como la ecuación \eqref{eq:sys_ham2} con las variables adimensionales:
+\begin{equation}
+ \label{eq:sys_ham2}
+  H(p,d) = \ln d - d + \mu(\ln p - p),
+\end{equation}
+donde se ha fijado $C=0$ sin pérdida de generalidad. Vemos que en efecto el Hamiltoniano depende implícitamente de $\tau$ y que describe una invariante temporal. En nuestro problema, si bien $p,d$ no representan coordenadas canónicas, admiten una estructura Hamiltoniana con un corchete de Poisson generalizado \citep{Nutku}. En este contexto, la evolución temporal de una función $f(p,d)$ viene dada por:
+\begin{equation}
+f' = \{f,H\},
+\end{equation}
+donde $\{\cdot,\cdot\}$ denota un corchete de Poisson.
+En particular, para el Hamiltoniano se tiene:
+\begin{equation}
+\frac{dH}{d\tau} = \{H,H\}.
+\end{equation}
+Dado que todo corchete de Poisson es antisimétrico \citep{Goldstein}, se cumple:
+\begin{equation}
+\{H,H\} = -\{H,H\},
+\end{equation}
+lo que implica a su vez que:
+\begin{equation}
+\frac{dH}{d\tau} = 0.
+\label{eq:invariante}
+\end{equation}
+Por lo tanto, $H(p,d)$ constituye una invariante temporal del sistema.
+ En la figura \ref{fig:phase_space_1} se muestran 100 curvas de nivel para distintos valores de $\mu.$
+ Notar que para todos los casos, tenemos valores estrictamente negativos, los cuales parecen aumentar a medida que nos acercamos al punto $(1,1)$, por lo que decimos que este punto actúa como un máximo local de $H(p,d)$. \\ 
+Para el análisis de puntos críticos, podemos partir enunciando que nuestro sistema de ecuaciones diferenciales \eqref{eq:lotka_norm} es un sistema \textbf{autónomo} pues no tiene dependencia explícita del tiempo. Para encontrar puntos críticos basta con estudiar donde $p',q'$ se anulan al mismo tiempo, y podemos utilizar el criterio de estabilidad para sistemas autónomos planos \citep{Zill} para estudiar la naturaleza de estos puntos. Es fácil ver que los 2 puntos críticos del sistema \eqref{eq:lotka_norm} son $(0,0)$ y $(1,1)$. El criterio utiliza los Jacobianos del Hamiltoniano en los puntos para determinar su naturaleza. Estos se calculan en las ecuaciones \eqref{eq:jacob1} y \eqref{eq:jacob2}. Observamos de inmediato que los autovalores asociados al punto $(0,0)$ son $\lambda_1 = 1, \lambda_2 = -\mu.$ Como $\mu$ es definido positivo, tenemos un autovalor con parte real negativa, y de acuerdo al criterio ya mencionado, $(0,0)$ representa un punto de equilibrio inestable del sistema, lo que se aprecia en las hipérbolas que hacen las curvas de nivel cerca del $(0,0)$ en la figura \ref{fig:phase_space_2}.
+ \begin{equation}
+   J(0,0) =  
+   \begin{pmatrix}
+     1 & 0 \\ \label{eq:jacob1}
+      0 & -\mu
+   \end{pmatrix},
+ \end{equation}
+
+  \begin{equation}
+   J(1,1) =  
+   \begin{pmatrix}
+     0 & -1 \\ \label{eq:jacob2}
+      \mu & 0
+   \end{pmatrix}.
+ \end{equation}
+ Sin embargo, los autovalores para $(1,1)$ son $\lambda_{1,2} = \pm i\sqrt{\mu}$, y el criterio no es concluyente, solo se clasifica al punto como un centro, por lo que podemos esperar que se formen órbitas/trayectorias cerradas alrededor de este punto . Para determinar su naturaleza, analizaremos este punto mediante funciones de Liapunov.  
+\begin{figure}
+ \centering
+   \includegraphics[scale=0.44]{lotka/lotka_phase_space.pdf}   \caption{100 curvas de nivel para $H$ a distintos $\mu$. El punto negro es el punto de equilibrio estable $(1,1)$.}
+   \label{fig:phase_space_1}
+\end{figure}
+
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.44]{lotka/lotka_phase_space_zoom.pdf}
+  \caption{Zoom a cada espacio de fase cerca del $(0,0)$.}
+  \label{fig:phase_space_2}
+\end{figure}
+
+El criterio consiste en determinar una función $V(x,y)$ (de Liapunov) a valores reales con derivadas parciales continuas en una vecindad de un punto crítico tal que: sí $(x_0,y_0)$ es un punto crítico aislado de nuestro sistema, $V(x_0,y_0)=0$ y $V(x,y)>0$ sobre el dominio en el que se trabaja, se  tienen los casos:
+\begin{enumerate}
+    \item Sí $\frac{\partial V}{\partial x}F + \frac{\partial V}{\partial y}G \le 0$ en el dominio , entonces $(x_0, y_0)$ es estable.
+    \item Sí $\frac{\partial V}{\partial x}F + \frac{\partial V}{\partial y}G < 0$ en el dominio, entonces $(x_0, y_0)$ es asintóticamente estable.
+    \item Sí $\frac{\partial V}{\partial x}F + \frac{\partial V}{\partial y}G > 0$ en el dominio, entonces $(x_0, y_0)$ es inestable
+    \citep{Osses}. 
+\end{enumerate}
+Donde $F,G$ serían en este caso $p',d'$. 
+Podemos construir nuestra función $V$ a partir del Hamiltoniano $H$ ya descrito. En particular, podemos ver que $V(p,d) = -H(p,d) + H(1,1)$ satisface las hipótesis necesarias para aplicar los criterios.
+Utilizando \eqref{eq:invariante}, vemos que la derivada temporal de $V$ también es nula. Con esto, podemos asegurar que $(1,1)$ es un punto de equilibrio estable. Esto se chequea al observar que las curvas de nivel parecieran estar "centradas" alrededor de este punto, como se observa en la figura \ref{fig:phase_space_1}, pues $(1,1)$ describe un máximo para el Hamiltoniano, y como su derivada temporal es 0, sumado a que su Jacobiano toma valores netamente imaginarios, es de esperar que actúe como un centro de las curvas de nivel.\\
+
+Finalizando, podemos analizar el rol que juegan las condiciones iniciales en todo esto. La figura \ref{fig:multiple} muestra variaciones de condiciones iniciales a distintos $\mu$. Vemos que difieren bastante de la figura \ref{fig:solutions}, debido fundamentalmente a que se varían las condiciones iniciales de la figura anterior. Sin embargo, podemos darnos cuenta que cuando una de las condiciones iniciales es $1$, induce que la otra magnitud se mantenga estable, es decir, su amplitud máxima es la misma que su condición inicial. Ya lo veíamos en \ref{fig:solutions}, pero queda expuesto en esta nueva figura. Esto tiene una explicación simple: al mirar las ecuaciones \eqref{eq:lotka_norm}, vemos que las derivadas de cada función se anulan cuando una de las coordenadas es $1$ (se anulan ambas en el punto de equilibrio). Luego, si una condición inicial de $p$ ó $d$ es $1$, induce que la otra función tenga un punto crítico en $\tau=0$. La naturaleza de este punto se determina rápidamente con el criterio de la segunda derivada:
+\begin{equation}
+ \begin{aligned}
+   p_{d_0=1}'' (0) &= \mu p_0(1-p_0), \\
+   d_{p_0=1}''(0) &= \mu d (1-d_0).
+ \end{aligned}
+\end{equation}
+Esto se deduce de las ecuaciones \eqref{eq:lotka_norm} y asumiendo que la otra condición inicial es 1. Analizando, vemos que la naturaleza de cada función en $\tau=0$ cuando la otra posee condición inicial 1, queda determinada por su propia condición inicial: si es mayor a 1, entonces la condición inicial determina un máximo (pues la segunda derivada sería negativa), caso contrario, un mínimo. En la figura \ref{fig:multiple}, solo se trabajó con condiciones mayores a 1, por lo que solo se definen máximos. Finalmente, los sistemas cazador-presa de Lotka-Volterra suelen ser periódicos, por lo que estos puntos definen máximos absolutos para nuestras funciones.  
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.45]{lotka/lotka_solutions_multi.pdf}  \caption{Soluciones numéricas al sistema adimensional de Lotka-Volterra a diferentes condiciones iniciales y distintos $\mu$. Figuras en la misma fila comparten condiciones iniciales.}
+  \label{fig:multiple}
+\end{figure}
+
+En el espacio de fases, las condiciones iniciales determinan las trayectorias, pues $H(p,d)=C$ para el sistema, y una condición inicial impone $H(p_0,d_0)=C_0$ diferente para cada par $(p_0,d_0)$. Observamos que en la figura \ref{fig:phase_final} las condiciones iniciales impuestas son exclusivas de ciertas curvas de nivel, en la cual se resalta la evolución de un estado inicial, lo que rompe con la mirada global de los espacios de fases: nos centramos en casos particulares, cada uno con su propias amplitudes y frecuencias, pero respetando todos la misma dinámica. Un análisis rápido a las figuras \ref{fig:phase_space_1} y \ref{fig:phase_final} muestra que bajo mismas condiciones iniciales, en el espacio de fases, un mayor valor de $\mu$ genera curvas de nivel más delgadas en el eje $p$ y más amplias en el eje $d$, y caso contrario cuando disminuye $\mu$. Esto se corresponde con las gráficas $\ref{fig:multiple}$, pues al aumentar el $\mu$, tiende a crecer la cantidad de depredadores y al disminuir, aumenta la de presas.
+
+\begin{figure}
+ \centering
+  \includegraphics[scale=0.4]{lotka/lotka_phase_space_highlighted_final.pdf} 
+  \caption{Espacio de fases para las distintas condiciones iniciales de la figura \ref{fig:multiple}.}
+ \label{fig:phase_final}  
+\end{figure}
+
+ \section*{Conclusiones}
+ Hemos realizado un análisis completo a la dinámica cazador-presa bajo el modelo de Lotka-Volterra, estudiando alternativas de resolver las ecuaciones, la implementación de métodos numéricos para resolverlo y análisis sobre la estabilidad y propiedades de las ecuaciones. La capacidad de poder trabajar un problema de dinámica de poblaciones utilizando herramientas de la mecánica evidencia el alcance de los análisis que podemos realizar con nuestros conocimientos en física, siempre respaldado por un buen código coherente con nuestro problema.
+  
+\section*{Agradecimientos}
+ Este capítulo fue escrito principalmente por Joaquín Parra, con revisiones tanto de código como de contenido de parte de sus compañeros de trabajo Alvaro Osses e Ignacio Falcón, quienes también contribuyeron a buscar referencias pertinentes al capítulo y a ajustar el desarrollo del Teorema Pi. Es necesario mencionar los comentarios del profesor del curso, Dr. Roberto Navarro, quien entregó retroalimentación crucial para este problema, cuyo repositorio de códigos para el curso sirvió de apoyo para este trabajo, y comentarios del profesor Dr. Juan Crisóstomo útiles para abordar parte de la interpretación mecánica del problema. Finalmente, en materia de código, se agradece al compañero de curso Israel Bravo por entregar guía en ciertos desarrollos del código, y se ha utilizado Gemini (IA de Google) para realizar el último gráfico del capítulo. 

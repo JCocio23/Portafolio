@@ -1,0 +1,291 @@
+\documentclass[../portafolio.tex]{subfiles}
+\begin{document}
+
+
+\chapter{Polinomios de Legendre e Interpolación para un intervalo de datos}
+\label{ch:polinomios_legendre}
+
+\chapterauthor{Ignacio Falcón, Joaquín Parra, Alvaro Osses}
+
+\hfill \textbf{Fecha de la actividad:} 10 de Diciembre del 2025
+
+Para el presente capítulo, se estudiarán los polinomios de Legendre basados en la fórmula de Laplace, con la cual se obtendrán valores para un rango $|x| \leq 1$ a través del uso de la Regla de Simpson $1/3$. Luego de esto, se hará uso de la \textbf{Interpolación de Lagrange} para llenar una cantidad determinada de puntos en base a nodos $x_i$.
+
+\section{Fórmulas para los Polinomios de Legendre}
+
+Dentro del análisis real y la física, la necesidad de un conjunto de "bases" para un espacio vectorial, como es el de $\mathbb{R}[x]$ ha sido de vital importancia, especialmente en la resolución de problemas con simetrías esféricas en ecuaciones diferenciales.
+
+Para esto, se puede hacer uso de los \textit{Polinomios de Legendre}, los cuales responden a ser soluciones de la \textit{ecuación diferencial de Legendre} (\cite{wiki_legendre}), la cual posee la fórmula explícita de:
+
+\begin{equation} \label{eq:diferencial_legendre}
+\frac{d}{dx} \left[(1-x^2)\frac{d}{dx}P_n(x) \right] + n(n+1) P_n(x) = 0
+\end{equation}
+
+Estos a su vez, poseen la particularidad ser ortogonales para valores $|x| \leq 1$ lo que significa que responden al producto punto o escalar definido (\cite{apuntes_ortogonalidad}) como:
+
+\begin{equation} \label{eq:ortogonalidad_legendre}
+\int_{-1}^1 P_m(x) P_n(x) dx = \frac{2}{2n+1} \delta_{mn}
+\end{equation}
+
+Donde $\delta_{mn}$ denota a la \textit{Delta de Kronecker}, la cual devuelve 1 si $m=n$ (Los polinomios $P_n(x)$ y $P_m(x)$ son iguales) y 0 si $m \neq n$ (Los poliniomios son diferentes).
+
+En base a esto, se puede formar una definición explícita para los Polinomios de Legendre haciendo uso de la \textbf{Fórmula de Rodrigues} :
+
+\begin{equation} \label{eq:derivada_legendre}
+P_n(x) = \frac{1}{2^n n!} \frac{d^n}{dx^n} [(x^2 - 1)]
+\end{equation}
+
+O haciendo uso de la \textbf{Fórmula de Laplace} como:
+
+\begin{equation} \label{eq:laplace_legendre}
+P_n(x) = \frac{1}{2\pi} Re \int_0^{2\pi} d\phi (x + i\sqrt{1-x^2}\cos \phi)^n
+\end{equation}
+
+Para efectos de este capítulo, se hará uso de la Fórmula de Laplace.
+
+\section{Análisis numérico de los Polinomios de Legendre para un intervalo definido}
+
+Para esta sección, se estudiará el uso de cálculos numéricos de los polinomios de Legendre haciendo uso de la ecuación (\ref{eq:laplace_legendre}) dentro del intervalo $-1 \leq x \leq 1$ con el fin de representarlos gráficamente a través del módulo \lstinline|matplotlib| de \lstinline|Python|. 
+
+Para esto, se hará uso de la \textit{Regla de Simpson 1/3 Compuesta} , la cual está definida como:
+
+\begin{equation} \label{eq:regla_simpson}
+\int_a^b f(x) dx \approx \frac{h}{3} \left[ f(x_0) + 4 \sum_{i=1, i\text{ impar}}^{n-1} f(x_i) + 2 \sum_{i=2, i\text{ par}}^{n-2} f(x_i) + f(x_n) \right]
+\end{equation}
+
+donde $h$ es la distancia entre los valores $x_i$, y $n$ siendo la cantidad de valores $x_i$ con los que trabajar.
+
+Finalmente, para efectos de la gráfica, se harán uso de $N=13$ valores para realizar la integral, con la que finalmente, se desean obtener los primeros seis polinomios de Legendre ($P_1(x), P_2(x), ..., P_6(x)$) en el intervalo de $-1 \leq x \leq 1$.
+
+El código presentado a continuación explicíta la idea concebida anteriormente:
+
+\begin{lstlisting}
+def integrado(x, n, phi):
+    return (x + np.sqrt( 1 - x**2)*np.cos(phi)*1j )**n 
+
+def Metodo_Simpson_1_3(f,n,x,c=13, **kwargs):
+    sum_impar, sum_par = 0,0
+    phi = np.linspace(0,2*np.pi, c)
+    h = phi[1] - phi[0]
+
+    for i in range(2,c-2,2):
+        sum_par += f(x, n,phi[i], **kwargs)
+
+    for i in range(1,c-1,2):
+        sum_impar += f(x,n,phi[i], **kwargs)
+
+    return h/3 * ( f(x,n,phi[0], **kwargs) + f(x,n,phi[-1], **kwargs) + 4 * sum_impar  +  2 * sum_par )
+
+def Legendre_n(x,n,g,f, **kwargs):
+    return 1/(2*np.pi) * g(f,n,x, **kwargs).real 
+
+def Polinomios_Legendre(n, w):
+    t = np.linspace(-1,1,w)
+    for i in range(1,n+1):
+        y = (Legendre_n(x =np.linspace(-1,1,w),n=i,g=Metodo_Simpson_1_3, f=integrado))
+        plt.plot(t,y,label=f'N ={i}')
+    plt.legend()
+    plt.show()
+\end{lstlisting}
+
+Finalmente, al ejecutar la función \lstinline|Polinomios_Legendre(6, 100)| se obtiene el presente gráfico (\ref{fig:seis_grados_polinomios}).
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\textwidth]{legrende/seis_grados_polinomios.png}
+    \caption{Gráfico de valores $(x_i, P_n(x_i))$ para grados de  $n=1,2,...,6$}
+    \label{fig:seis_grados_polinomios}
+\end{figure}
+
+\section{Interpolación de Lagrange y coeficientes del polinomio}
+
+\subsection{Interpolación de Lagrange para Polinomios}
+
+A continuación, se hará uso de la interpolación de Lagrange en base a una cantidad determinada de nodos para generar una curva que asemeje a la del polinomio de Legendre a tratar, con el objetivo de encontrar los coeficientes de este a través de un ajuste de datos (\cite{enciclopedia_lagrange}).
+
+Para comenzar, se debe definir la interpolación de Lagrange, la cual es un método numérico que tiene como objetivo interpolar un intervalo de datos entre diferentes puntos $(x_i, y_i)$ a través de un \textit{Polinomio de Lagrange}, que tiene la forma:
+
+\begin{equation} 
+P(o) = \sum_{i=0}^n y_i \cdot L_i(o)
+\end{equation}
+
+Donde $L_i(o)$ se conoce como el \textit{Polinomio base de Lagrange} (\cite{wiki_lagrange}), el cual se define como:
+
+\begin{equation}
+L_i(o) = \prod^n_{j=0,j \neq i} \frac{o-x_j}{x_i-x_j}
+\end{equation}
+
+Ahora, al hacer uso de esto, se considerarán como nodos $(x_i, y_i)$ puntos de los Polinomios de Legendre, para comparar los coeficientes generados por la interpolación y los coeficientes reales para cada grado.
+
+Por lo cual, se tiene que para un Polinomio de Legendre con grado $n$, el código que grafica esta función interpolada sería:
+
+\begin{lstlisting}
+def Interpol_Lagrange(int, x, y):
+    k = len(x) - 1
+    sum = 0
+    for i in range(k + 1):
+        prod = y[i]
+        for j in range(k + 1):
+            if i != j:
+                prod = prod*(int - x[j])/(x[i] - x[j])
+        sum = sum + prod
+    return sum
+
+def Interpolar_Legendre(n,m, w): 
+    data= np.linspace(-1,1,w)
+    data_m = np.linspace(-1,1,m)
+    s = Legendre_n(x =data_m,n=n,g=Metodo_Simpson_1_3, f=integrado)
+    l = (Legendre_n(x =data,n=n,g=Metodo_Simpson_1_3, f=integrado))
+\end{lstlisting}
+
+Este código, junto a las funciones mencionadas anteriormente, permite graficar los polinomios interpolados tal como se puede observar en (\ref{fig:graficos_polinomios_interpolados})
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\textwidth]{legrende/graficos_interpolados.png}
+    \caption{Gráficos de comparación entre Polinomios de Legendre para grados $n=4,5,6$. Para cada gráfico, en rojo, los puntos generados por la interpolación de Lagrange, en verde los nodos generados por la Fórmula de Laplace para los Polinomios de Legendre, y en azul la curva del Polinomio descrito a través de la fórmula de Laplace.}
+    \label{fig:graficos_polinomios_interpolados}
+\end{figure}
+
+\subsection{Comparación de Coeficientes del Polinomio}
+
+A partir de esto, se pueden utilizar los puntos $(x_k, y_k)$ generados por la interpolación de Lagrange para obtener los coeficientes aproximados del Polinomio de Legendre sobre el cual se generaron los nodos.
+
+Esto se realizará a través de una interpolación con el método de Vandermonde, donde se obtendrán los valores de los coeficientes a través del cálculo de la inversa de la matriz de Vandermonde para los nodos $(x_i, y_i)$ \citep{acad_vander} .
+
+En base a esto, se puede definir el código a utilizar como:
+
+\begin{lstlisting}
+def Coeficientes_Interpolados(n):
+    w = n+1
+    x = np.linspace(-1,1,w)
+    y = Legendre_n(x =x,n=n,g=Metodo_Simpson_1_3, f=integrado)
+    matriz_vander = np.vander(x)
+    Coeficientes = np.linalg.solve(matriz_vander, y) 
+    legendre_coef = np.array(scp.special.legendre(n))
+\end{lstlisting}
+
+Luego de esto, y usando los coeficientes obtenidos, se pueden comparar haciendo uso del cálculo del error absoluto entre cada coeficiente real y obtenido, donde el error se define como:
+
+\begin{equation}
+\varepsilon_{\text{abs}} = |A_{\text{calculado}} - A_{\text{polinomio}}|
+\end{equation}
+
+Obteniendo de esta forma la información de (\ref{tab:legendre_interpolacion}):
+
+\begin{table}
+    \centering
+    \begin{tabular}{l c c c}
+        \toprule
+        \textbf{Polinomio} & \textbf{Coeficiente Exacto} & \textbf{Coeficiente Interpolado} & \textbf{Error Absoluto} \\
+        \midrule
+        $P_1(x)$ & & & \\
+        \quad Coef. $x^1$ & 1 & 1 & 0 \\
+        \quad Coef. $x^0$ & 0 & 0 & 0 \\
+        \midrule
+
+        $P_2(x)$ & & & \\
+        \quad Coef. $x^2$ & 1.5 & 1.5 & 0 \\
+        \quad Coef. $x^1$ & 0 & 0 & 0 \\
+        \quad Coef. $x^0$ & -0.5 & -0.5 & 0 \\
+        \midrule
+
+        $P_3(x)$ & & & \\
+        \quad Coef. $x^3$ & 2.5 & 2.5 & 4.44089210e-16 \\
+        \quad Coef. $x^2$ & 0 & -2.49800181e-16& 2.49800181e-16 \\
+        \quad Coef. $x^1$ & -1.5 & -1.5 & 2.22044605e-16 \\
+        \quad Coef. $x^0$ & 0 & 2.22044605e-16 & 2.22044605e-16  \\
+        \midrule
+
+        $P_4(x)$ & & & \\
+        \quad Coef. $x^4$ & 4.375 & 4.375 & 0 \\
+        \quad Coef. $x^3$ & 4.85722573e-16 & 0& 4.85722573e-16 \\
+        \quad Coef. $x^2$ & -3.75 & -3.75 & 8.88178420e-16 \\
+        \quad Coef. $x^1$ & 2.42861287e-16 & 0 & 2.42861287e-16 \\
+        \quad Coef. $x^0$ & 3.75e-1 & 3.75e-1& 5.55111512e-17 \\
+        \midrule
+
+        $P_5(x)$ & & & \\
+        \quad Coef. $x^5$ & 7.875 & 7.875 & 1.77635684e-15 \\
+        \quad Coef. $x^4$ & 0 & -1.44560290e-15& 1.44560290e-15 \\
+        \quad Coef. $x^3$ & -8.75 & -8.75 & 1.77635684e-15 \\
+        \quad Coef. $x^2$ & -4.37150316e-16 & 1.61907524e-15 & 2.05622556e-15 \\
+        \quad Coef. $x^1$ & 1.875 & 1.875 & 2.22044605e-16 \\
+        \quad Coef. $x^0$ & 0 & 2.22044605e-16& 2.22044605e-16 \\
+        \midrule
+
+        $P_6(x)$ & & & \\
+        \quad Coef. $x^6$ & 1.44375000e1 & 1.44270833e1& 1.04166667e-2 \\
+        \quad Coef. $x^5$ & 0 & 6.18255447e-15 & 6.18255447e-15 \\
+        \quad Coef. $x^4$ & -1.96875000e1 & -1.96562500e1& 3.12500000e-2 \\
+        \quad Coef. $x^3$ & 1.60288449e-15 & -9.59232693e-15 & 1.11952114e-14 \\
+        \quad Coef. $x^2$ & 6.5625 & 6.53125 & 3.125e-2 \\
+        \quad Coef. $x^1$ & 0 & 3.40977246e-15 & 3.40977246e-15 \\
+        \quad Coef. $x^0$ & -3.125e-1 & -3.02083333e-1& 1.04166667e-2 \\
+    \end{tabular}
+    \caption{Comparación de Coeficientes Exactos vs. Interpolados para $P_n(x)$ con su respectivo error absoluto. Notar que el \textbf{Coeficiente Exacto}, proviene del término obtenido por \lstinline|numpy.special.legendre|, mientras que \textbf{Coeficiente Interpolado}, proviene del código utilizado al realizar la interpolación. Finalmente, el error absoluto fue calculado haciendo uso del código anteriormente mencionado.}
+    \label{tab:legendre_interpolacion}
+
+\end{table}
+ Dentro de esta, se puede notar el hecho que una variedad de coeficientes poseen términos de orden $\approx -14$, lo que indica valores extremadamente pequeños a diferencia de los que se encuentran en otros grados. Esto se debe a errores de redondeo dentro del sistema de la computadora, la cual se debe al hecho de que la precisión de la máquina no es capaz de computar con números tan pequeños.
+
+Finalmente, es importante destacar el hecho de que para trabajar con esta construcción de los Polinomios de Legendre de orden $n$, es necesario contar con una cantidad $n+1$ de nodos $x_i$ con los que poder actuar.
+
+Esto es debido al hecho de que al realizar la matriz de Vandermonde o para utilizar los polinomios interpoladores de Lagrange, con el objetivo de encontrar los coeficientes de un polinomio de grado $n$, estos generan un conjunto de ecuaciones con $n+1$ variables, donde ($x_i, y_i$) son variables conocidas (nodos). 
+Por tanto, para un polinomio, la matriz que reúne las ecuaciones estaría condicionada como:
+
+\begin{equation}
+    \begin{pmatrix}
+        x_1^n  \quad x_1^{n-1} \quad  ... x_1 \quad 1\\
+        x_2^n \quad x_2^{n-1}\quad  ... x_2 \quad 1\\
+        x_3^n \quad x_3^{n-1}\quad  ... x_3 \quad 1\\
+        ... \\
+        x_{m}^n \quad  x_m^{n-1} \quad ... x_m \quad 1\\
+    \end{pmatrix}
+    \begin{pmatrix}
+        c_1 \\
+        c_2 \\
+        c_3 \\
+        ... \\
+        c_m
+    \end{pmatrix} =
+    \begin{pmatrix}
+        y_1\\
+        y_2 \\
+        y_3 \\
+        ... \\
+        y_m
+    \end{pmatrix}
+\end{equation}
+
+Donde se puede notar que la única forma que esta matriz tenga inversa y por ende solución (suponiendo nodos diferentes entre si) es que sea cuadrada, y por ende, que $m = n + 1$.
+
+
+\section*{Conclusión}
+
+Para concluir, hay que hacer mención del conocimiento adquirido sobre los Polinomios de Legendre, su definición y cómo implementarla en el ámbito numérico, esto a través de una de sus definiciones haciendo uso de la Fórmula de Laplace, la cual tuvo por desafió diseñar la integral apropiada, como fue en este caso haciendo uso del Método de Simpson $1/3$.
+
+Por otro lado, se pudo constatar y comprender de forma más práctica la utilidad que posee la Interpolación y como esta permite obtener coeficientes de un polinomio concreto en base a esta, permitiendo obtener datos del desarrollo de funciones en cuestión en base a datos o puntos finitos, esto, a través de métodos como el uso de la matriz de Vandermonde, método con el cual obtener coeficientes de un polinomio interpolado.
+
+
+\section*{Agradecimientos}
+
+Hacer los agradecimientos correspondientes a Amaro Díaz y Fernanda Mella por sus comentarios y conocimientos para poder aplicar el método de Interpolación de Lagrange.
+
+A su vez, notar la mayoritaria contribución del capitulo por Ignacio Falcón, además, notar el trabajo de Álvaro Osses por el código dentro de la interpolación de Lagrange, a Joaquín Parra por correcciones de cohesión, redacción y ortografía, y a Benjamín Fuentes por la explicación del uso de la matriz de Vandermonde durante la búsqueda de coeficientes.
+
+Finalmente, mencionar que para este informe, se hizo uso de inteligencia artificial con el código de LaTex para confeccionar tablas y referencias.
+
+% ortogonalidad http://mat-avanzadas.fcaglp.unlp.edu.ar/public_html/Mat-Esp-II/pdfs/apuntes-teoricos/Legendre.pdfs
+
+% definicion https://es.wikipedia.org/wiki/Polinomios_de_Legendre
+
+% definicion https://en.wikipedia.org/wiki/Lagrange_polynomial
+
+% interpretacion https://encyclopediaofmath.org/index.php?title=Lagrange_interpolation_formula
+
+
+
+
+
+\end{document}

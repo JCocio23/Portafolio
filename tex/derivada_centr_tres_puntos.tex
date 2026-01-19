@@ -1,0 +1,169 @@
+\documentclass[../portafolio.tex]{subfiles}
+\begin{document}
+
+\chapter{Derivada no equidistante de tres puntos y nodos de Gauss-Chebyshev}
+\label{ch:derivada_tres_puntos}
+
+\chapterauthor{Ignacio Falcón, Joaquín Parra, Alvaro Osses}
+
+\hfill \textbf{Fecha de la actividad:} 7 de Noviembre del 2025
+
+En este capítulo, se analizará y demostrará una fórmula de tres puntos no necesariamente equidistantes para realizar una derivada numérica sobre una función escalar haciendo uso de series de Taylor, para luego, desarrollar y discutir el error de truncamiento generado a través de la presente fórmula.
+
+Seguidamente, se usarán nodos de Gauss-Chebyshev para evaluar la derivada numérica demostrada frente a la derivada analítica de la función.
+
+\section{Formulación de la derivada de tres puntos junto a su orden de error}
+
+Para iniciar, es importante dar conocimiento a las herramientas utilizadas durante esta demostración, por ello, se presenta a continuación la serie de Taylor.
+
+Se tiene que, para una función continua e infinitamente derivable en un punto $x_0 = x + h$, el valor de la función en un punto a una distancia $h$ próxima a este por la derecha en la recta, será de:
+
+\begin{equation} \label{serie_de_taylor}
+f(x+h) = f(x) + f' (x) \cdot h + \frac{1}{2!} f ''(x) \cdot h^2 + ...
+\end{equation} 
+
+En base a esto, se puede definir derivadas numéricas haciendo uso de una cantidad concreta de puntos. Para el presente desarrollo, se harán uso de tres puntos o nodos de una distancia no equidistante unos con otros.
+
+Estos puntos, corresponderán a ser $x_{k-1}$, $x_k$ y $x_{k+1}$, en donde a su vez, se define la distancia entre puntos como $h_{k+1} = x_{k+1} -  x_k$ y $h_k = x_k - x_{k-1}$. Además, se denotará también a la función evaluada en el punto $x_{k-1}$, $x_k$ y $x_{k+1}$ como $f_{k-1}$, $f_k$ y $f_{k+1}$, correspondientemente.
+
+En base a esto y, haciendo uso de la serie de Taylor correspondiente, se tiene que:
+
+\begin{equation} \label{taylor_adelantado}
+    f_{k+1} = f_k + \frac{df_k}{dx} \cdot h_{k+1} + \frac{1}{2!}\frac{d^2f_k}{dx^2} \cdot h_{k+1}^2 + \frac{1}{3!} \frac{d^3f(\xi_1)}{dx^3} \cdot h_{k+1}^3 \,.
+\end{equation}
+
+En donde se puede notar que esta serie considera a los puntos $x_k$ y $x_{k+1}$, además, se considera al punto $(\xi_1, f(\xi_1))$ tal que $x_k < \xi_1 < x_{k+1}$, esto basado en el teorema del Valor Medio, a modo de realizar una consideración del resto que conlleva la serie infinita. Por otro lado, se puede considerar a los puntos $x_{k-1}$ y $x_k$ para realizar una serie de Taylor, donde, similarmente, se puede encontrar al valor $\xi_2$, en este caso estando dentro del intervalo $x_{k-1} < \xi_2 < x_k$, entonces:
+
+\begin{equation} \label{taylor_retrasado}
+    f_{k-1} = f_k - \frac{df_k}{dx} \cdot h_k + \frac{1}{2!}\frac{d^2f_k}{dx^2} \cdot h_k^2 - \frac{1}{3!} \frac{d^3f(\xi_2)}{dx^3} \cdot h_k^3
+\end{equation}
+
+Notar que en este caso, los términos impares son negativos, esto es debido al hecho que la serie está considerando el valor $f_{k-1} = f(x_k - h_k)$, por lo que su expansión considera el término $-h_k$ dentro del cálculo, por lo que este genera términos negativos en derivadas impares (ya que el exponente del término $h_k$ es impar).
+
+Ahora, considerando (\ref{taylor_retrasado}) y (\ref{taylor_adelantado}) se puede obtener una expresión para $h_k f_{k+1} - h_{k+1} f_{k-1}$ y por tanto, luego despejar $\frac{df_k}{dx}$, obteniendo entonces:
+
+\begin{equation} \label{taylor_derivada_xis}
+    \frac{df_k}{dx} = \frac{f_k - f_{k-1}}{h_{k+1} + h_k} \frac{h_{k+1}}{h_k} + \frac{f_{k+1} - f_k}{h_{k+1} + h_k} \frac{h_k}{h_{k+1}} - \frac{1}{3!} h_k h_{k+1} \frac{f'''(\xi_1) h_{k+1} + f'''(\xi_2) h_{k}}{h_k+h_{k+1}} 
+\end{equation}
+
+Ahora bien, considerando el término que contiene a $f'''(\xi_1)$ y $f'''(\xi_2)$, se puede hacer uso del teorema del valor medio para asegurar que existe un valor $\xi$ tal que exista $f(\xi)$ dentro de la recta que une los puntos $(\xi_1, f(\xi_1))$ y $(\xi_2, f(\xi_2))$, por lo cual, se puede considerar que:
+
+\begin{equation} \label{taylor_derivada_xi}
+    \frac{df_k}{dx} = \frac{f_k - f_{k-1}}{h_{k+1} + h_k} \frac{h_{k+1}}{h_k} + \frac{f_{k+1} - f_k}{h_{k+1} + h_k} \frac{h_k}{h_{k+1}} - \frac{1}{3!} \frac{d^3f(\xi)}{dx^3} \cdot h_k \cdot h_{k+1}
+\end{equation}
+
+Por ello, notar que al truncar la expresión anterior en función de los primeros dos términos iniciales, y de esta forma, truncando así el error $f(\xi)$, se tiene que:
+
+
+\begin{equation}
+\frac{df_k}{dx} = \frac{f_k - f_{k-1}}{h_{k+1} + h_k} \frac{h_{k+1}}{h_k} + \frac{f_{k+1} - f_k}{h_{k+1} + h_k} \frac{h_k}{h_{k+1}} 
+\end{equation}
+
+Donde, se puede notar que debido al resto existente del truncamiento, el orden de menor grado $h_k$ o $h_{k+1}$ es de:
+
+\begin{equation}
+E_k =  - \frac{1}{3!} \frac{d^3f(\xi)}{dx^3} \cdot h_k \cdot h_{k+1} 
+\end{equation}
+
+De orden $O(h_k h_{k+1})$.
+
+Esto es debido a que, a pesar que las distancias $h_k \neq h_{k+1}$, estos valores de distancia se consideran pequeños para efectos de una derivada aproximada correcta, por lo que $h_k, h_{k+1} <<1$, en consecuencia, se tiene entonces que $h_k \cdot h_{k+1} >  h_k^2 \cdot h_{k+1}$ o bien $h_k \cdot h_{k+1} > h_k \cdot h_{k+1}^2$, por lo que en consecuencia, el orden con mayor relevancia (o bien, mayor valor) es de $O(h_k h_{k+1})$ Esto además, es producto del efecto obtenido al sumar las expansiones en serie de Taylor sobre los términos con derivada de segundo grado, los cuales se cancelan, cancelando de esta forma términos con posible error de orden $O(h)$.
+
+
+%------------------------------------------------------------
+
+\section{Análisis de la derivada de tres puntos con nodos Gauss-Chebyshev}
+
+Para continuar con el análisis de la derivada de tres puntos formulada en la sección anterior, se comparará su resultado numérico frente a la derivada algebraica.
+
+Para esto, se hará uso de los \textbf{Nodos de Gauss-Chebyshev}. 
+
+En concreto, se definen como un conjunto de puntos específicos que son de utilidad en el análisis numérico para obtener aproximaciones precisas para funciones a la hora de realizar análisis de derivación o integración (\cite{mena}).
+
+Estos provienen de los llamados \textit{Polinomios de Chebyshev} o polinomios de menor máximo absoluto, en donde corresponden a ser ceros de estos, por lo que comparten la propiedad de minimizar el error de aproximación a la hora de interpolar datos (\cite{merino-interpolacion}). 
+
+Ahora, el cálculo de estos puntos procede la siguiente ecuación (\cite{chebyshev-ehu}):
+
+\begin{equation} \label{nodos_gauss_chebyshev}
+    x_k = \cos \left( \frac{2k - 1}{2N} \pi \right)
+\end{equation}
+ 
+ En donde $k=1,2,3,4...$ corresponde al nodo a encontrar, mientras que $N$ es la cantidad de nodos de Gauss-Chebyshev ($x_k$) a considerar.
+
+Ahora, para hacer uso de estos, se compararán las derivadas numérica (haciendo uso de la derivada de tres puntos en (\ref{derivada_tres_puntos}) y la derivada analítica de la función $f(x) = \cos (x\pi)$ calculada algebraicamente, la cual corresponde a ser:
+\begin{equation} \label{derivada_analitica_sin}
+    f'(x) = - \pi \sin (x \pi)
+\end{equation}
+Esto, se hará a través del uso del lenguaje de programación \textit{Python}, haciendo uso de la librería interna de \textit{Numpy}.
+
+A continuación, el código utilizado:
+
+% -------- Codigo de la derivada y los nodos
+\begin{lstlisting} 
+N=  10
+
+def dx_numerica(x,f):
+    f = f(x)
+    y = np.zeros(len(x))
+    for i in range(1,len(x)-1):
+        h_k = x[i] - x[i-1]
+        h_k_1 = x[i+1] - x[i]
+        df_1 = h_k_1/(h_k + h_k_1) * (f[i] - f[i-1])/h_k
+        df_2 = h_k/(h_k + h_k_1) * (f[i+1] - f[i])/h_k_1
+        y[i] = df_1 + df_2
+
+    return x[1:-1], y[1:-1]
+
+def cos(a):
+    return np.cos(np.pi*a)
+
+def gauss_chebyshev(N):
+    x = np.zeros(N)
+    print(N)
+    for i in range(N):
+        x[i] = np.cos((2*(i+1) -1)/(2*(N)) * np.pi)
+    return x
+
+def dx_analitica(x):
+    return -np.sin(np.pi*x)*np.pi
+
+# Obtención de los valores f(x_k) de forma analítica
+x_prueba = np.linspace(-1,1,100)
+y = dx_analitica(x_prueba)
+
+# Obtención de los valores f(x_k) de forma numérica
+x = gauss_chebyshev(N)
+x_gen, y_gen = dx_numerica(x,cos)
+\end{lstlisting}
+
+%-----------------------------
+
+
+A partir del anterior código presentado, se puede analizar gráficamente los datos entregados para un conjunto de $10$ nodos de Gauss-Chebyshev, los cuales son visibles en la \autoref{derivada_tres_puntos_comparacion}.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=0.7\textwidth]{../img/derivada_gauss_chebyshev/derivadas_gauss_chebyshev.png}
+    \caption{Comparación entre derivada analítica y numérica para 10 valores $x_k$. Para esto, se hace uso de la función $f(x) = \cos (\pi x)$ y el método de derivación numérica para tres puntos no equidistantes. Notar que debido a esto, no existe la derivada en los extremos de los conjuntos de puntos $x_i$ puesto que no se puede calcular su respectiva derivada debido a la falta de un punto anterior}
+    \label{derivada_tres_puntos_comparacion}
+\end{figure}
+
+
+Gracias a esto, es posible visibilizar el hecho de que el conjunto de rectas generadas por los puntos de la derivada numérica asemeja a la derivada analítica de la función $f(x) = cos(\pi x)$ (\ref{derivada_analitica_sin}) para los valores $x_k$ asignados previamente de los nodos de Gauss-Chebyshev (\ref{nodos_gauss_chebyshev}), esto muestra que la derivada de tres puntos realiza una correcta ejecución de la derivada numérica.
+
+Notar también, que la distancia entre nodos es de menor valor cerca de los extremos del intervalo, esto es debido a la propiedad que poseen los ceros de polinomios de Gauss-Chebyshev, lo que permite evitar efectos indeseados a la hora de analizar e interpolar valores, tales como el fenómeno de Runge\footnote{Efecto de error generado para puntos equidistantes, consultar referencia (\cite{merino-interpolacion})}, que genera oscilaciones de error cerca de los bordes de los intervalos de trabajo.
+
+Finalmente, hay que dar cuenta del hecho que a diferencia de la derivada analítica, la derivada numérica posee una diferencia circunstancial en la amplitud que alcanza (Notar de \autoref{derivada_tres_puntos_comparacion}), esto es debido al error que se genera debido a la distancia que existe entre los valores $x_k$ (donde para menor diferencia entre cada valor), esto a través de una mayor cantidad de puntos, la amplitud alcanzada tiende a ser igual a la vista en la derivada analítica.
+
+\section*{Conclusiones}
+Para concluir este capítulo, se demostró la derivada de tres puntos no equidistantes, en donde se mostró que el orden de esta era de $O(h_k h_{k+1})$, lo cuál, para valores de $h_k \approx h_{k+1}$ es sustancialmente mas útil que derivadas del tipo adelantada y retrasada, las cuales poseen orden del tipo $O(h)$\footnote{Derivadas de este estilo obtenidas a través del uso de la Serie de Taylor (\ref{serie_de_taylor})}. 
+
+Como siguiente punto, se hizo uso de la derivada numérica anteriormente vista para obtener la derivada de una función $f(x)$, donde se puede observar que esta cumple de forma satisfactoria con los puntos generados para la función a través de los nodos de Gauss-Chebyshev.
+
+A través de este capítulo, se pudo comprender de forma más interactiva la relación entre puntos de una función con la derivada numérica que estos pueden generar, esto, a través del uso de una derivada a puntos no equidistantes.A su vez, se conoció sobre los polinomios de Gauss-Chebyshev y los ceros de estos, también llamados nodos de Gauss-Chebyshev, elementos que se esperan que en un futuro se puedan volver a utilizar debido a las propiedades que estas poseen para análisis numérico y proyectos de este índole.
+
+\section*{Agradecimientos}
+Notar la autoría principal de este capitulo por Ignacio Falcón, complementado por comentarios de Alvaro Osses en ámbitos de código para el desarrollo de la derivada y Joaquín Parra en correcciones de cohesión y redacción.
+
+Para el código de las referencias de este capítulo dentro de \lstinline{referencias.bib}, se hizo uso de Gemini para darles el respectivo formato. 
+\end{document}
